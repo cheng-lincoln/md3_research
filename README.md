@@ -1,2 +1,3 @@
-death censor date = 31 May 2023
-healthcare utilization censor date = 31 Jan 2024
+censor date = 30 Apr 2024
+
+1) Run build patients: this creates a list of patients and their SPARKLE/usual intervention status
