@@ -72,7 +72,7 @@ class PatientsData:
     """
     Initializes an empty PatientsData object
     """
-    self.patients = {}
+    self.patients = {} # {<patient_id>: Patient}
 
   def addPatient(self, patient):
     """
@@ -120,6 +120,15 @@ class PatientsData:
 
   @classmethod
   def load(cls, loc='processed_data/patients.json'):
+    """
+    Loads patients data from disk.
+
+    Parameters:
+      loc (str): Location on disk to load from. Uses default location if none provided.
+
+    Returns:
+      PatientsData: a PatientsData object
+    """
     with open(loc, 'r') as f:
       storage_obj = json.load(f)
 
