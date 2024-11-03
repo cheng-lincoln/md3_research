@@ -18,7 +18,7 @@ def addToEvents(events, patient_id, patient_type, event_type, event_date):
 
 #==========================================================
 
-with open('results/patients.json', 'r') as f:
+with open('processed_data/patients.json', 'r') as f:
   patients = json.load(f)
 
 events = {
@@ -75,4 +75,4 @@ for index, row in death.iterrows():
 events_df = pd.DataFrame(data=events)
 events_df = events_df.sort_values(by=['id', 'event_date'])
 print(events_df)
-events_df.to_csv('results/events.csv', index=False)
+events_df.to_csv('processed_data/events.csv', index=False)

@@ -28,5 +28,5 @@ for index, row in patient_info.iterrows():
     patient_type=PatientType.SPARKLE if row['Combined_data_allocation'] == 'SPARKLE' else PatientType.USUAL
   )
 
-with open('results/patients.json', 'w') as f:
+with open('processed_data/patients.json', 'w') as f:
     json.dump(patients, f, sort_keys=True, indent=2)
