@@ -1,7 +1,6 @@
 import pandas as pd
 import json
-from enums import PatientType, Gender
-from utils import serializeTimestamp
+from enums import PatientType
 
 def upsertPatient(patients, id, patient_type):
   #TODO: validate arguments

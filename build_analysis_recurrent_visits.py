@@ -1,9 +1,7 @@
 import json
 import pandas as pd
 import numpy as np
-from enums import EventType, Censor
 from utils import deserializeToTimestamp, get_censor_date, get_patient_type, get_death_date, get_enrollment_date, get_emergency_department_uses, get_unplanned_inpatient_admissions
-import warnings
 
 '''
 Example of patient_events:

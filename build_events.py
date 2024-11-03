@@ -1,6 +1,6 @@
 import json
 import pandas as pd
-from enums import EventType, PatientType, Gender
+from enums import EventType, PatientType
 from utils import serializeTimestamp
 
 def addToEvents(events, patient_id, patient_type, event_type, event_date):
