@@ -2,9 +2,9 @@ import pandas as pd
 import json
 from enums import PatientType
 
-class PatientInfo:
+class Patient:
   """
-  This class patient information.
+  This class stores information of a patient.
 
   Attributes:
     id (int): The ID of the patient
@@ -20,6 +20,23 @@ class PatientInfo:
     self.id = id
     self.patient_type = patient_type
 
+  def __repr__(self):
+    return json.dumps(
+      {
+        'id': self.id,
+        'patient_type': self.patient_type,
+        'patient_type_description': self.describePatientType()
+      },
+      indent=2
+    )
+
+  def describePatientType(self):
+    """
+    Returns:
+      str: The patient type (i.e SPARKLE or Usual) in descriptive form.
+    """
+    return PatientType(self.patient_type).name
+
 def extractPatientInfo(row):
   """
   Extracts patient information from a row in patient_information excel sheet
@@ -28,7 +45,7 @@ def extractPatientInfo(row):
     row (Series): a row from the excel sheet, represented as a Pandas DataFrame's Series
 
   Returns:
-    PatientInfo: A PatientInfo object
+    Patient: A Patient object
   """
   id = row['REDCap_No']
   if not type(id) is int:
@@ -38,7 +55,7 @@ def extractPatientInfo(row):
   if (not patient_type == 'SPARKLE') and (not patient_type == 'Usual'):
     raise ValueError('The patient type of a patient extracted from the patient_information excel sheet is neither SPARKLE or Usual')
 
-  return PatientInfo(
+  return Patient(
     id,
     PatientType.SPARKLE if row['Combined_data_allocation'] == 'SPARKLE' else PatientType.USUAL
   )

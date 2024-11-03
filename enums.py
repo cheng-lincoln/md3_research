@@ -1,14 +1,10 @@
 from enum import IntEnum
 
 class EventType(IntEnum):
-  OUTPATIENT = -2
-  ED_NOADMIT = -1
   ENROLLMENT = 0
   ED_ADMIT = 1
-  INPATIENT = 2
-  HDU = 3
-  ICU = 4
-  DEATH = 5
+  ED_NOADMIT = 2
+  DEATH = 3
 
 class PatientType(IntEnum):
   USUAL = 0
