@@ -26,12 +26,14 @@ def convert_patient_events_to_preschema(patient_events, start_dt, end_dt, group)
 
   return preschema
 
-# output schema
-# - id
-# - group: 0 (usual) or 1 (sparkle)
-# - time0
-# - time
-# - status: 0 (censored) or 1 (event occured)
+'''
+output schema
+- id
+- group: 0 (usual) or 1 (sparkle)
+- time0
+- time
+- status: 0 (censored) or 1 (event occured)
+'''
 
 with open('processed_data/patients.json', 'r') as f:
   patients = json.load(f)
@@ -69,7 +71,7 @@ emergency_department_uses_schema = pd.DataFrame(
 )
 print(emergency_department_uses_schema)
 
-emergency_department_uses_schema.to_csv('processed_data/emergency_department_uses_analysis.csv', index=False)
+emergency_department_uses_schema.to_csv('processed_data/emergency_department_uses_andersengill_table.csv', index=False)
 
 unplanned_inpatient_admissions_schema = pd.DataFrame(
   np.array(unplanned_inpatient_admissions_preschema_of_all_patients),
@@ -77,4 +79,4 @@ unplanned_inpatient_admissions_schema = pd.DataFrame(
 )
 print(unplanned_inpatient_admissions_schema)
 
-unplanned_inpatient_admissions_schema.to_csv('processed_data/unplanned_inpatient_admissions_analysis.csv', index=False)
+unplanned_inpatient_admissions_schema.to_csv('processed_data/unplanned_inpatient_admissions_andersengill_table.csv', index=False)
