@@ -60,16 +60,87 @@ def extractPatient(row):
     PatientType.SPARKLE if row['Combined_data_allocation'] == 'SPARKLE' else PatientType.USUAL
   )
 
+class PatientsData:
+  """
+  This object helps to write and retrieve patient information to and from storage.
+
+  Attributes:
+    patients ({<patient_id>: Patient}): A dictionary of Patient objects
+  """
+
+  def __init__(self):
+    """
+    Initializes an empty PatientsData object
+    """
+    self.patients = {}
+
+  def addPatient(self, patient):
+    """
+    Adds a patient
+
+    Parameters:
+      patient (Patient): The patient to be added
+    """
+    if patient.id in self.patients:
+      raise ValueError('Cannot add patient to PatientsData object because patient already exists')
+
+    self.patients[patient.id] = patient
+
+  def getPatient(self, patient_id):
+    """
+    Retrieves a patient given the patient's ID
+
+    Parameters:
+      patient_id (int): ID of the patient to retrieve
+
+    Returns:
+      Patient: the respective Patient
+    """
+    if not patient_id in self.patients:
+      raise ValueError('Patient {0} does not exist in PatientsData object'.format(patient_id))
+
+    return self.patients[patient_id]
+
+  def save(self, loc='processed_data/patients.json'):
+    """
+    Saves patients data to disk.
+
+    Parameters:
+      loc (str): Location on disk to save to. Uses default location if none provided.
+    """
+    storage_obj = {}
+
+    for patient_id, patient in self.patients.items():
+      storage_obj[patient_id] = {
+        'patient_type': patient.type
+      }
+
+    with open(loc, 'w') as f:
+      json.dump(storage_obj, f, sort_keys=True, indent=2)
+
+  @classmethod
+  def load(cls, loc='processed_data/patients.json'):
+    with open(loc, 'r') as f:
+      storage_obj = json.load(f)
+
+    patientsData = PatientsData()
+
+    for patient_id, patient_info in storage_obj.items():
+      patientsData.addPatient(
+        Patient(
+          int(patient_id),
+          patient_info['patient_type']
+        )
+      )
+
+    return patientsData
+
 # -------
-patients = {}
+patientsData = PatientsData()
 
 patients_info = pd.read_excel('data/patient_information.xlsx')
 for index, row in patients_info.iterrows():
   patient = extractPatient(row)
+  patientsData.addPatient(patient)
 
-  patients[str(patient.id)] = {
-    'patient_type': patient.type
-  }
-
-with open('processed_data/patients.json', 'w') as f:
-    json.dump(patients, f, sort_keys=True, indent=2)
+patientsData.save()

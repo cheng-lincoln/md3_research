@@ -10,10 +10,6 @@ class PatientType(IntEnum):
   USUAL = 0
   SPARKLE = 1
 
-class Gender(IntEnum):
-  FEMALE = 0
-  MALE = 1
-
 class Censor(IntEnum):
   CENSORED = 0
   EVENT_OCCURRED = 1

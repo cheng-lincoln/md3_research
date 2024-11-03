@@ -3,7 +3,7 @@ import json
 import pandas as pd
 from enums import EventType
 from utils import serializeTimestamp
-from build_patients import Patient
+from build_patients import Patient, PatientsData
 
 class Event:
   """
@@ -144,8 +144,7 @@ for index, row in death_events.iterrows():
 # Now we want to transform our Events[] into a transposed form so that pandas can create a DataFrame with it.
 # We also want to add in patient_type information for each event
 
-with open('processed_data/patients.json', 'r') as f:
-  patients = json.load(f)
+patientsData = PatientsData.load()
 
 events_transposed = {
   'id': [], # int[]
@@ -159,10 +158,7 @@ events_transposed = {
 }
 
 for event in events:
-  patient = Patient(
-   event.patient_id,
-   patients[str(event.patient_id)]['patient_type']
-  )
+  patient = patientsData.getPatient(event.patient_id)
 
   events_transposed['id'].append(patient.id)
   events_transposed['patient_type'].append(patient.type)
