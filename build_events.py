@@ -1,7 +1,7 @@
 from datetime import datetime
 import json
 import pandas as pd
-from enums import EventType, PatientType
+from enums import EventType
 from utils import serializeTimestamp
 from build_patients import Patient
 
@@ -11,8 +11,8 @@ class Event:
 
   Attributes:
     patient_id (int): ID of the patient involved
-    event_type (EventType): What event occurred
-    event_date (datetime): When the event occured
+    type (EventType): What event occurred
+    date (datetime): When the event occured
   """
 
   def __init__(self, patient_id, event_type, event_date):
@@ -23,14 +23,14 @@ class Event:
       event_date (datetime): When the event occured
     """
     self.patient_id = patient_id
-    self.event_type = event_type
-    self.event_date = event_date
+    self.type = event_type
+    self.date = event_date
 
   def __repr__(self):
     return json.dumps(
       {
         'patient_id': self.patient_id,
-        'event_type': self.event_type,
+        'event_type': self.type,
         'event_type_description': self.describeEventType(),
         'event_date_description': self.describeEventDate()
       },
@@ -42,14 +42,14 @@ class Event:
     Returns:
       str: The event type (e.g ENROLLMENT, ED_ADMIT, ED_NOADMIT, DEATH) in descriptive form.
     """
-    return EventType(self.event_type).name
+    return EventType(self.type).name
 
   def describeEventDate(self):
     """
     Returns:
       str: The event date in descriptive form.
     """
-    return serializeTimestamp(self.event_date)
+    return serializeTimestamp(self.date)
 
 def extractEnrollmentEvent(row):
   """
@@ -165,13 +165,13 @@ for event in events:
   )
 
   events_transposed['id'].append(patient.id)
-  events_transposed['patient_type'].append(patient.patient_type)
+  events_transposed['patient_type'].append(patient.type)
   events_transposed['patient_type_description'].append(patient.describePatientType())
 
-  events_transposed['event_type'].append(event.event_type)
+  events_transposed['event_type'].append(event.type)
   events_transposed['event_type_description'].append(event.describeEventType())
 
-  events_transposed['event_date'].append(serializeTimestamp(event.event_date))
+  events_transposed['event_date'].append(serializeTimestamp(event.date))
 
 events_df = pd.DataFrame(data=events_transposed)
 events_df = events_df.sort_values(by=['id', 'event_date'])

@@ -8,23 +8,23 @@ class Patient:
 
   Attributes:
     id (int): The ID of the patient
-    patient_type (PatientType): Whether the patient is randomized to SPARKLE or Usual intervention
+    type (PatientType): Whether the patient is randomized to SPARKLE or Usual intervention
   """
 
   def __init__(self, id, patient_type):
     """
     Parameters:
       id (int): The ID of the patient
-      patient_type (PatientType): Whether the patient is randomized to SPARKLE or Usual intervention
+      ptype (PatientType): Whether the patient is randomized to SPARKLE or Usual intervention
     """
     self.id = id
-    self.patient_type = patient_type
+    self.type = patient_type
 
   def __repr__(self):
     return json.dumps(
       {
         'id': self.id,
-        'patient_type': self.patient_type,
+        'patient_type': self.type,
         'patient_type_description': self.describePatientType()
       },
       indent=2
@@ -35,9 +35,9 @@ class Patient:
     Returns:
       str: The patient type (i.e SPARKLE or Usual) in descriptive form.
     """
-    return PatientType(self.patient_type).name
+    return PatientType(self.type).name
 
-def extractPatientInfo(row):
+def extractPatient(row):
   """
   Extracts patient information from a row in patient_information excel sheet
 
@@ -65,10 +65,10 @@ patients = {}
 
 patients_info = pd.read_excel('data/patient_information.xlsx')
 for index, row in patients_info.iterrows():
-  patient_info = extractPatientInfo(row)
+  patient = extractPatient(row)
 
-  patients[str(patient_info.id)] = {
-    'patient_type': patient_info.patient_type
+  patients[str(patient.id)] = {
+    'patient_type': patient.type
   }
 
 with open('processed_data/patients.json', 'w') as f:
