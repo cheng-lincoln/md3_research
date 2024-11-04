@@ -1,12 +1,12 @@
 ## Background
 
-TBD
+This code repository is created for the investigation of ...
 
 #### Others
 
-The censor date used is <u>30 Apr 2024</u>.
+The censor date used is **30 Apr 2024**.
 
-Patient <u>109</u> is excluded from the analysis.
+Patient **109** is excluded from the analysis.
 
 
 
