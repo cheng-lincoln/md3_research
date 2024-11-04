@@ -298,7 +298,7 @@ class EventsData:
 
     return EventsData(events_df, patientsData)
 
-#==========================================================
+# -------
 events = [] # Events[]
 
 enrollment_events = pd.read_excel('data/enrollment_events.xlsx')
