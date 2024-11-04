@@ -171,7 +171,7 @@ The important files and folders are explained:
    # If you see red ticks:
    # -> If it mentions data files missing, add them to the corresponding folders
    # -> If it mentions being not able to create directories (i.e folders), you can manually create them
-   # AFTER DOING THAT, run the above command again to ensure that only green ticks appear
+   # After doing so, RUN THE ABOVE COMMAND AGAIN again to ensure that only green ticks appear
    ```
 
 2) Next, we run the code to extract patient information:
