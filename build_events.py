@@ -122,8 +122,92 @@ def checkForDeathEvent(row):
 
   return Event(patient_id, EventType.DEATH, event_date)
 
+class EventsData:
+  """
+  This immutable object helps to write events data to and from storage.
+  Omce initialized, events cannot be added or removed.
+
+  Attributes:
+    events_df (DataFrame): a pandas DataFrame of all the events
+    patientsData (PatientsData): patient information
+  """
+
+  def __init__(self, events_df, patientsData):
+    """
+    Parameters:
+      events_df (DataFrame): a pandas DataFrame of all events
+      patientsData (PatientsData): patient information
+    """
+    self.events_df = events_df.sort_values(by=['id', 'event_date'])
+    self.patientsData = patientsData
+
+  def save(self, loc='processed_data/events.csv'):
+    """
+    Saves events data to disk.
+
+    Parameters:
+      loc (str): Location on disk to save to. Uses default location if none provided.
+    """
+    print(self.events_df)
+    self.events_df.to_csv(loc, index=False)
+    return
+
+  @classmethod
+  def load(cls, loc='processed_data/events.csv'):
+    """
+    Loads events data from disk.
+
+    Parameters:
+      loc (str): Location on disk to load from. Uses default location if none provided.
+
+    Returns:
+      EventsData: an EventsData object
+    """
+    events_df = pd.read_csv(loc)
+    return EventsData(events_df, PatientsData.load())
+
+  @classmethod
+  def fromEvents(cls, events):
+    """
+    Creates EventsData from Event[]
+
+    Parameters:
+      events (Event[]): the list of events
+
+    Returns:
+      EventsData: an EventsData object
+    """
+    patientsData = PatientsData.load()
+
+    events_transposed = {
+    'id': [], # int[]
+    'patient_type': [],
+    'patient_type_description': [],
+
+    'event_type': [],
+    'event_type_description': [],
+
+    'event_date': [] # str[]
+    }
+
+    for event in events:
+      patient = patientsData.getPatient(event.patient_id)
+
+      events_transposed['id'].append(patient.id)
+      events_transposed['patient_type'].append(patient.type)
+      events_transposed['patient_type_description'].append(patient.describePatientType())
+
+      events_transposed['event_type'].append(event.type)
+      events_transposed['event_type_description'].append(event.describeEventType())
+
+      events_transposed['event_date'].append(serializeTimestamp(event.date))
+
+    events_df = pd.DataFrame(data=events_transposed)
+
+    return EventsData(events_df, patientsData)
+
 #==========================================================
-events = [] # Event[]
+events = [] # Events[]
 
 enrollment_events = pd.read_excel('data/enrollment_events.xlsx')
 for index, row in enrollment_events.iterrows():
@@ -144,32 +228,5 @@ for index, row in death_events.iterrows():
 # Now we want to transform our Events[] into a transposed form so that pandas can create a DataFrame with it.
 # We also want to add in patient_type information for each event
 
-patientsData = PatientsData.load()
-
-events_transposed = {
-  'id': [], # int[]
-  'patient_type': [],
-  'patient_type_description': [],
-
-  'event_type': [],
-  'event_type_description': [],
-
-  'event_date': [] # str[]
-}
-
-for event in events:
-  patient = patientsData.getPatient(event.patient_id)
-
-  events_transposed['id'].append(patient.id)
-  events_transposed['patient_type'].append(patient.type)
-  events_transposed['patient_type_description'].append(patient.describePatientType())
-
-  events_transposed['event_type'].append(event.type)
-  events_transposed['event_type_description'].append(event.describeEventType())
-
-  events_transposed['event_date'].append(serializeTimestamp(event.date))
-
-events_df = pd.DataFrame(data=events_transposed)
-events_df = events_df.sort_values(by=['id', 'event_date'])
-print(events_df)
-events_df.to_csv('processed_data/events.csv', index=False)
+eventsData = EventsData.fromEvents(events)
+eventsData.save()
