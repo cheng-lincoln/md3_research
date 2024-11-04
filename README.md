@@ -15,7 +15,7 @@ Patient <u>109</u> is excluded from the analysis.
 #### Software Requirements
 
 1) Python (most recent python installations should be compatible)
-   - It is recommended to use a virtual environment to prevent library incompatibilities with your native python installation (see [How to Run](how_to_run) section below)
+   - It is recommended to use a virtual environment to prevent library incompatibilities with your native python installation (see [How to Run](#how_to_run) section below)
 2) STATA (any edition should be compatible)
 
 #### Data Requirements
