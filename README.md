@@ -28,7 +28,7 @@ Patient <u>109</u> is excluded from the analysis.
 
 #### Overview
 
-![image-20241104130628585](/Users/lincoln/Library/Application Support/typora-user-images/image-20241104130628585.png)
+![image](https://github.com/user-attachments/assets/4d8eda9e-4589-414f-a07f-0f6f411c7a51)
 
 #### Repository Structure
 
