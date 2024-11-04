@@ -2,8 +2,8 @@ from datetime import datetime
 import json
 import pandas as pd
 from enums import EventType
-from utils import serializeTimestamp
-from build_patients import Patient, PatientsData
+from utils import serializeTimestamp, deserializeToTimestamp
+from build_patients import PatientsData
 
 class Event:
   """
@@ -140,6 +140,98 @@ class EventsData:
     """
     self.events_df = events_df.sort_values(by=['id', 'event_date'])
     self.patientsData = patientsData
+
+  def getPatientType(self, patient_id):
+    return self.patientsData.getPatient(patient_id).type
+
+  def findDeathDate(self, patient_id):
+    """
+    Retrieves the death date of a given patient, if any
+
+    Parameters:
+      patient_id (int): ID of the patient
+
+    Returns:
+      datetime: date of death
+      None: if no death date found
+    """
+    event = self.events_df.loc[
+      (self.events_df['id'] == patient_id) & (self.events_df['event_type'] == EventType.DEATH)
+    ]
+
+    if len(event) > 1:
+      raise ValueError('there are >1 DEATH events for patient', patient_id)
+
+    return deserializeToTimestamp(event['event_date'].values[0]) if not event.empty else None
+
+  def findEnrollmentDate(self, patient_id):
+    """
+    Retrieves the enrollment date of a given patient
+
+    Parameters:
+      patient_id (int): ID of the patient
+
+    Returns:
+      datetime: date of enrollment
+    """
+    event = self.events_df.loc[(self.events_df['id'] == patient_id) & (self.events_df['event_type'] == EventType.ENROLLMENT)]
+
+    if event.empty:
+      raise ValueError('there are no ENROLLMENT events for patient', patient_id)
+
+    if len(event) > 1:
+      raise ValueError('there are >1 ENROLLMENT events for patient', patient_id)
+
+    return deserializeToTimestamp(event['event_date'].values[0])
+
+  def findPostEnrollmentEvents(self, patient_id):
+    """
+    Retrieves all events after enrollment
+
+    Parameters:
+      patient_id (int): ID of the patient
+
+    Returns:
+      DataFrame.loc: all post enrollment events of a patient
+    """
+    all_events = self.events_df.loc[self.events_df['id'] == patient_id].sort_values(by=['event_date'])
+
+    all_postenrollment_events = all_events.loc[(all_events['event_type'] == EventType.ENROLLMENT).idxmax():]
+
+    return all_postenrollment_events
+
+  def findEmergencyDepartmentUses(self, patient_id):
+    """
+    Retrieves all emergency department uses AFTER enrollment
+
+    Parameters:
+      patient_id (int): ID of the patient
+
+    Returns:
+      DataFrame.loc: all emergency department uses AFTER enrollment
+    """
+    postEnrollmentEvents = self.findPostEnrollmentEvents(patient_id)
+
+    return postEnrollmentEvents.loc[
+      (postEnrollmentEvents['event_type'] == EventType.ED_ADMIT) |
+      (postEnrollmentEvents['event_type'] == EventType.ED_NOADMIT)
+    ]
+
+  def findUnplannedInpatientAdmissions(self, patient_id):
+    """
+    Retrieves all unplanned inpatient admissions AFTER enrollment
+
+    Parameters:
+      patient_id (int): ID of the patient
+
+    Returns:
+      DataFrame.loc: all unplanned inpatient admissions AFTER enrollment
+    """
+    postEnrollmentEvents = self.findPostEnrollmentEvents(patient_id)
+
+    return postEnrollmentEvents.loc[
+      (postEnrollmentEvents['event_type'] == EventType.ED_ADMIT)
+    ]
 
   def save(self, loc='processed_data/events.csv'):
     """

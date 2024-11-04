@@ -16,10 +16,13 @@
 # x.append([4,5,6])
 # print(x)
 
-x = []
-a = [[1,2,3], [4,5,6]]
-b = [[7,8,9], [10,11,12]]
+# x = []
+# a = [[1,2,3], [4,5,6]]
+# b = [[7,8,9], [10,11,12]]
 
-x += a
-x += b
-print(x)
+# x += a
+# x += b
+# print(x)
+
+for patient_id in [i for i in range(1,241) if i != 109]:
+  print(patient_id)
