@@ -5,6 +5,9 @@ class EventType(IntEnum):
   ED_ADMIT = 1
   ED_NOADMIT = 2
   DEATH = 3
+  CLINIC_ADMIT = 4
+  ELECTIVE_ADMIT = 5
+  DISCHARGE = 6
 
 class PatientType(IntEnum):
   USUAL = 0

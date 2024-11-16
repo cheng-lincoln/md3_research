@@ -93,9 +93,48 @@ def extractEmergencyDepartmentEvent(row):
   if not isinstance(event_date, datetime):
     raise ValueError('The event date extracted from emergency_department_events excel_sheet is not a datetime object')
 
-  event_type = EventType.ED_ADMIT if row['Discharge Type Description'] == 'I/P Admission' else EventType.ED_NOADMIT
+  match row['Discharge Type Description']:
+    case 'I/P Admission':
+      event_type = EventType.ED_ADMIT
+    case _:
+      event_type = EventType.ED_NOADMIT
 
   return Event(patient_id, event_type, event_date)
+
+def extractAdmitAndDischargeEvents(row):
+  """
+  Extracts an admission event and its corresponding discharge event from a row in inpatient_events excel sheet
+
+  Args:
+    row (Series): a row from the excel sheet, represented as a Pandas DataFrame's Series
+
+  Returns:
+    Event[2]: A list of 2 events, the first being the admit event, the second the discharge event
+  """
+  patient_id = row['record_id']
+  if not type(patient_id) is int:
+    raise ValueError('The patient id extracted from the inpatient_events excel sheet is not an integer type')
+
+  admit_date = row['Admit/Visit Date']
+  if not isinstance(admit_date, datetime):
+    raise ValueError('The admit date extracted from inpatient_events excel_sheet is not a datetime object')
+
+  discharge_date = row['Discharge Date']
+  if not isinstance(discharge_date, datetime):
+    raise ValueError('The discharge date extracted from inpatient_events excel_sheet is not a datetime object')
+
+  match row['Admit Type Description']:
+    case 'Emergency':
+      admit_type = EventType.ED_ADMIT
+    case 'Urgent':
+      admit_type = EventType.CLINIC_ADMIT
+    case _:
+      admit_type = EventType.ELECTIVE_ADMIT
+
+  return [
+    Event(patient_id, admit_type, admit_date),
+    Event(patient_id, EventType.DISCHARGE, discharge_date)
+  ]
 
 def checkForDeathEvent(row):
   """
@@ -312,6 +351,14 @@ for index, row in ed_events.iterrows():
   ed_event = extractEmergencyDepartmentEvent(row)
   if ed_event.type == EventType.ED_NOADMIT:
     events.append(ed_event)
+
+# only add non-elective admissions
+inpatient_events = pd.read_excel('data/inpatient_events.xlsx')
+for index, row in inpatient_events.iterrows():
+  admit_event, discharge_event = extractAdmitAndDischargeEvents(row)
+  if (admit_event.type == EventType.ED_ADMIT) or (admit_event.type == EventType.CLINIC_ADMIT):
+    events.append(admit_event)
+    events.append(discharge_event)
 
 death_events = pd.read_excel('data/death_events.xlsx')
 for index, row in death_events.iterrows():
