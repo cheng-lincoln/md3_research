@@ -306,10 +306,12 @@ for index, row in enrollment_events.iterrows():
   enrollment_event = extractEnrollmentEvent(row)
   events.append(enrollment_event)
 
+# only add ED events with no admission
 ed_events = pd.read_excel('data/emergency_department_events.xlsx')
 for index, row in ed_events.iterrows():
   ed_event = extractEmergencyDepartmentEvent(row)
-  events.append(ed_event)
+  if ed_event.type == EventType.ED_NOADMIT:
+    events.append(ed_event)
 
 death_events = pd.read_excel('data/death_events.xlsx')
 for index, row in death_events.iterrows():
