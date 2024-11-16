@@ -1,7 +1,7 @@
 from enum import IntEnum
 
 class EventType(IntEnum):
-  # Values should be sortable: if 2 events occur on the same day, which should come first?
+  # Values should be sortable: if 2 events occur on the same day, which should come first (smaller number should occur first)?
   ENROLLMENT = 0
   ED_NOADMIT = 1
 
