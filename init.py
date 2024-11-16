@@ -20,7 +20,8 @@ required_files = [
   'data/enrollment_events.xlsx',
   'data/emergency_department_events.xlsx',
   'data/death_events.xlsx',
-  'data/inpatient_events.xlsx'
+  'data/inpatient_events.xlsx',
+  'data/ipos.xlsx'
 ]
 for required_file in required_files:
   if os.path.isfile(required_file):
