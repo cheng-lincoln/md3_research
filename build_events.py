@@ -109,7 +109,9 @@ def extractAdmitAndDischargeEvents(row):
     row (Series): a row from the excel sheet, represented as a Pandas DataFrame's Series
 
   Returns:
-    Event[2]: A list of 2 events, the first being the admit event, the second the discharge event
+    [Event, Event]: A list of 2 events, the first being the admit event, the second the discharge event
+    or
+    [None, None]: if the admission was cancelled
   """
   patient_id = row['record_id']
   if not type(patient_id) is int:
@@ -133,6 +135,10 @@ def extractAdmitAndDischargeEvents(row):
     case _:
       admit_type = EventType.ADMIT_ELECTIVE
       discharge_type = EventType.ADMIT_ELECTIVE_ENDS
+
+  # Special case: urgent admissions can be cancelled
+  if row['Discharge Type Description'] == 'Cancel Admission':
+    return [None, None]
 
   return [
     Event(patient_id, admit_type, admit_date),
@@ -256,6 +262,7 @@ class EventsData:
 
     return postEnrollmentEvents.loc[
       (postEnrollmentEvents['event_type'] == EventType.ADMIT_ED) |
+      (postEnrollmentEvents['event_type'] == EventType.ADMIT_ED_ENDS) |
       (postEnrollmentEvents['event_type'] == EventType.ED_NOADMIT)
     ]
 
@@ -272,7 +279,10 @@ class EventsData:
     postEnrollmentEvents = self.findPostEnrollmentEvents(patient_id)
 
     return postEnrollmentEvents.loc[
-      (postEnrollmentEvents['event_type'] == EventType.ADMIT_ED)
+      (postEnrollmentEvents['event_type'] == EventType.ADMIT_ED) |
+      (postEnrollmentEvents['event_type'] == EventType.ADMIT_ED_ENDS) |
+      (postEnrollmentEvents['event_type'] == EventType.ADMIT_CLINIC) |
+      (postEnrollmentEvents['event_type'] == EventType.ADMIT_CLINIC_ENDS)
     ]
 
   def save(self, loc='processed_data/events.csv'):
@@ -359,9 +369,10 @@ for index, row in ed_events.iterrows():
 inpatient_events = pd.read_excel('data/inpatient_events.xlsx')
 for index, row in inpatient_events.iterrows():
   admit_event, discharge_event = extractAdmitAndDischargeEvents(row)
-  if (admit_event.type == EventType.ADMIT_ED) or (admit_event.type == EventType.ADMIT_CLINIC):
-    events.append(admit_event)
-    events.append(discharge_event)
+  if (admit_event is not None):
+    if admit_event.type in [EventType.ADMIT_ED, EventType.ADMIT_CLINIC]:
+      events.append(admit_event)
+      events.append(discharge_event)
 
 death_events = pd.read_excel('data/death_events.xlsx')
 for index, row in death_events.iterrows():
