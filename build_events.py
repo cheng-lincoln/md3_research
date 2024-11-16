@@ -186,7 +186,7 @@ class EventsData:
       events_df (DataFrame): a pandas DataFrame of all events
       patientsData (PatientsData): patient information
     """
-    self.events_df = events_df.sort_values(by=['id', 'event_date'])
+    self.events_df = events_df.sort_values(by=['id', 'event_date', 'event_type'])
     self.patientsData = patientsData
 
   def getPatientType(self, patient_id):
@@ -242,7 +242,7 @@ class EventsData:
     Returns:
       DataFrame.loc: all post enrollment events of a patient
     """
-    all_events = self.events_df.loc[self.events_df['id'] == patient_id].sort_values(by=['event_date'])
+    all_events = self.events_df.loc[self.events_df['id'] == patient_id]
 
     all_postenrollment_events = all_events.loc[(all_events['event_type'] == EventType.ENROLLMENT).idxmax():]
 
