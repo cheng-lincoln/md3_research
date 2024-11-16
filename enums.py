@@ -2,12 +2,17 @@ from enum import IntEnum
 
 class EventType(IntEnum):
   ENROLLMENT = 0
-  ED_ADMIT = 1
+  DEATH = 1
   ED_NOADMIT = 2
-  DEATH = 3
-  CLINIC_ADMIT = 4
-  ELECTIVE_ADMIT = 5
-  DISCHARGE = 6
+
+  ADMIT_ED = 31
+  ADMIT_CLINIC = 32
+  ADMIT_ELECTIVE = 33
+
+  ADMIT_ED_ENDS = 41
+  ADMIT_CLINIC_ENDS = 42
+  ADMIT_ELECTIVE_ENDS = 43
+
 
 class PatientType(IntEnum):
   USUAL = 0

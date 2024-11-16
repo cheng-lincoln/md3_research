@@ -95,7 +95,7 @@ def extractEmergencyDepartmentEvent(row):
 
   match row['Discharge Type Description']:
     case 'I/P Admission':
-      event_type = EventType.ED_ADMIT
+      event_type = EventType.ADMIT_ED
     case _:
       event_type = EventType.ED_NOADMIT
 
@@ -125,15 +125,18 @@ def extractAdmitAndDischargeEvents(row):
 
   match row['Admit Type Description']:
     case 'Emergency':
-      admit_type = EventType.ED_ADMIT
+      admit_type = EventType.ADMIT_ED
+      discharge_type = EventType.ADMIT_ED_ENDS
     case 'Urgent':
-      admit_type = EventType.CLINIC_ADMIT
+      admit_type = EventType.ADMIT_CLINIC
+      discharge_type = EventType.ADMIT_CLINIC_ENDS
     case _:
-      admit_type = EventType.ELECTIVE_ADMIT
+      admit_type = EventType.ADMIT_ELECTIVE
+      discharge_type = EventType.ADMIT_ELECTIVE_ENDS
 
   return [
     Event(patient_id, admit_type, admit_date),
-    Event(patient_id, EventType.DISCHARGE, discharge_date)
+    Event(patient_id, discharge_type, discharge_date)
   ]
 
 def checkForDeathEvent(row):
@@ -252,7 +255,7 @@ class EventsData:
     postEnrollmentEvents = self.findPostEnrollmentEvents(patient_id)
 
     return postEnrollmentEvents.loc[
-      (postEnrollmentEvents['event_type'] == EventType.ED_ADMIT) |
+      (postEnrollmentEvents['event_type'] == EventType.ADMIT_ED) |
       (postEnrollmentEvents['event_type'] == EventType.ED_NOADMIT)
     ]
 
@@ -269,7 +272,7 @@ class EventsData:
     postEnrollmentEvents = self.findPostEnrollmentEvents(patient_id)
 
     return postEnrollmentEvents.loc[
-      (postEnrollmentEvents['event_type'] == EventType.ED_ADMIT)
+      (postEnrollmentEvents['event_type'] == EventType.ADMIT_ED)
     ]
 
   def save(self, loc='processed_data/events.csv'):
@@ -356,7 +359,7 @@ for index, row in ed_events.iterrows():
 inpatient_events = pd.read_excel('data/inpatient_events.xlsx')
 for index, row in inpatient_events.iterrows():
   admit_event, discharge_event = extractAdmitAndDischargeEvents(row)
-  if (admit_event.type == EventType.ED_ADMIT) or (admit_event.type == EventType.CLINIC_ADMIT):
+  if (admit_event.type == EventType.ADMIT_ED) or (admit_event.type == EventType.ADMIT_CLINIC):
     events.append(admit_event)
     events.append(discharge_event)
 
