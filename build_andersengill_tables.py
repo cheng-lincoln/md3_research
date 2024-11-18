@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from utils import deserializeToTimestamp, get_censor_date
-from enums import Censor, EventType
+from enums import Censor, EventType, PatientType, PatientCompliance
 from build_events import EventsData
 
 class AndersenGillFormatter:
@@ -12,7 +12,9 @@ class AndersenGillFormatter:
     patient_id (int): ID of the patient
     start_date (datetime): start date used in the analysis (enrollment date)
     end_date (datetime): end date used in the analysis (derived death date, if any, and censor date)
-    itt (PatientType): 0 = usual, 1 = sparkle
+    itt (int): 0 = usual, 1 = sparkle
+    at (int): 0 = usual or sparkle-noncompliant, 1 = sparkle-compliant
+    TODO pp (int): 0 = usual, 1 = sparkle-compliant
     emergency_department_uses (DataFrame.loc): all post-enrollment emergency department events of the patient
     unplanned_inpatient_admissions (DataFrame.loc): all post-enrollment unplanned inpatient admission events of the patient
   """
@@ -33,7 +35,10 @@ class AndersenGillFormatter:
     death_date = eventsData.findDeathDate(patient_id)
     self.end_date = censor_date if (death_date is None) or (death_date > censor_date) else death_date
 
-    self.itt = eventsData.getPatientType(patient_id)
+    patient_type = eventsData.getPatientType(patient_id)
+    patient_compliance = eventsData.getPatientCompliance(patient_id)
+    self.itt = 1 if patient_type == PatientType.SPARKLE else 0
+    self.at = 1 if (patient_type == PatientType.SPARKLE and patient_compliance == PatientCompliance.SPARKLE_COMPLIANT) else 0
 
     self.emergency_department_uses = eventsData.findEmergencyDepartmentUses(patient_id)
 
@@ -90,7 +95,7 @@ class AndersenGillFormatter:
     time0 = 0
     for idx, d_time in enumerate(days):
       time = time0 + d_time
-      table.append([self.patient_id, self.itt, time0, time, Censor.CENSORED if idx == len(days)-1 else Censor.EVENT_OCCURRED])
+      table.append([self.patient_id, self.itt, self.at, time0, time, Censor.CENSORED if idx == len(days)-1 else Censor.EVENT_OCCURRED])
       time0 = time
 
     masked_table = [row for row, keep in zip(table, to_keep) if keep]
@@ -123,14 +128,14 @@ for patient_id in [i for i in range(1,241) if i != 109]: # exclude patient 109
 
 emergency_department_uses_table_df = pd.DataFrame(
   np.array(emergency_department_uses_table),
-  columns=['id', 'itt', 'time0', 'time', 'status']
+  columns=['id', 'itt', 'at', 'time0', 'time', 'status']
 )
 print(emergency_department_uses_table_df)
 emergency_department_uses_table_df.to_csv('processed_data/emergency_department_uses_table.csv', index=False)
 
 unplanned_inpatient_admissions_table_df = pd.DataFrame(
   np.array(unplanned_inpatient_admissions_table),
-  columns=['id', 'itt', 'time0', 'time', 'status']
+  columns=['id', 'itt', 'at', 'time0', 'time', 'status']
 )
 print(unplanned_inpatient_admissions_table_df)
 unplanned_inpatient_admissions_table_df.to_csv('processed_data/unplanned_inpatient_admissions_table.csv', index=False)
