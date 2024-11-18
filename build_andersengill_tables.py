@@ -12,7 +12,7 @@ class AndersenGillFormatter:
     patient_id (int): ID of the patient
     start_date (datetime): start date used in the analysis (enrollment date)
     end_date (datetime): end date used in the analysis (derived death date, if any, and censor date)
-    group (PatientType): 0 = usual, 1 = sparkle
+    itt (PatientType): 0 = usual, 1 = sparkle
     emergency_department_uses (DataFrame.loc): all post-enrollment emergency department events of the patient
     unplanned_inpatient_admissions (DataFrame.loc): all post-enrollment unplanned inpatient admission events of the patient
   """
@@ -33,7 +33,7 @@ class AndersenGillFormatter:
     death_date = eventsData.findDeathDate(patient_id)
     self.end_date = censor_date if (death_date is None) or (death_date > censor_date) else death_date
 
-    self.group = eventsData.getPatientType(patient_id)
+    self.itt = eventsData.getPatientType(patient_id)
 
     self.emergency_department_uses = eventsData.findEmergencyDepartmentUses(patient_id)
 
@@ -65,7 +65,7 @@ class AndersenGillFormatter:
           157 1            SPARKLE                   1          DEATH                   2024-01-10
 
     Returns:
-      id (int), group (int), time0 (int), time (int), status (int)
+      id (int), itt (int), time0 (int), time (int), status (int)
       [
         [ , , , , ],
         [ , , , , ],
@@ -90,7 +90,7 @@ class AndersenGillFormatter:
     time0 = 0
     for idx, d_time in enumerate(days):
       time = time0 + d_time
-      table.append([self.patient_id, self.group, time0, time, Censor.CENSORED if idx == len(days)-1 else Censor.EVENT_OCCURRED])
+      table.append([self.patient_id, self.itt, time0, time, Censor.CENSORED if idx == len(days)-1 else Censor.EVENT_OCCURRED])
       time0 = time
 
     masked_table = [row for row, keep in zip(table, to_keep) if keep]
@@ -103,7 +103,7 @@ We want to build the Andersen-Gill Table from all the
 
 Andersen-Gill Table has these columns:
 - id
-- group: 0 (usual) or 1 (sparkle)
+- itt: 0 (usual) or 1 (sparkle)
 - time0
 - time
 - status: 0 (censored) or 1 (event occured)
@@ -123,14 +123,14 @@ for patient_id in [i for i in range(1,241) if i != 109]: # exclude patient 109
 
 emergency_department_uses_table_df = pd.DataFrame(
   np.array(emergency_department_uses_table),
-  columns=['id', 'group', 'time0', 'time', 'status']
+  columns=['id', 'itt', 'time0', 'time', 'status']
 )
 print(emergency_department_uses_table_df)
 emergency_department_uses_table_df.to_csv('processed_data/emergency_department_uses_table.csv', index=False)
 
 unplanned_inpatient_admissions_table_df = pd.DataFrame(
   np.array(unplanned_inpatient_admissions_table),
-  columns=['id', 'group', 'time0', 'time', 'status']
+  columns=['id', 'itt', 'time0', 'time', 'status']
 )
 print(unplanned_inpatient_admissions_table_df)
 unplanned_inpatient_admissions_table_df.to_csv('processed_data/unplanned_inpatient_admissions_table.csv', index=False)
