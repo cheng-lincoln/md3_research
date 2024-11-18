@@ -192,6 +192,9 @@ class EventsData:
   def getPatientType(self, patient_id):
     return self.patientsData.getPatient(patient_id).type
 
+  def getPatientCompliance(self, patient_id):
+    return self.patientsData.getPatient(patient_id).compliance
+
   def findDeathDate(self, patient_id):
     """
     Retrieves the death date of a given patient, if any
@@ -327,6 +330,8 @@ class EventsData:
     'id': [], # int[]
     'patient_type': [],
     'patient_type_description': [],
+    'patient_compliance': [],
+    'patient_compliance_description': [],
 
     'event_type': [],
     'event_type_description': [],
@@ -340,6 +345,8 @@ class EventsData:
       events_transposed['id'].append(patient.id)
       events_transposed['patient_type'].append(patient.type)
       events_transposed['patient_type_description'].append(patient.describePatientType())
+      events_transposed['patient_compliance'].append(patient.compliance)
+      events_transposed['patient_compliance_description'].append(patient.describePatientCompliance())
 
       events_transposed['event_type'].append(event.type)
       events_transposed['event_type_description'].append(event.describeEventType())
