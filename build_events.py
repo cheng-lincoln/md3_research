@@ -387,8 +387,5 @@ for index, row in death_events.iterrows():
   if not death_event is None:
     events.append(death_event)
 
-# Now we want to transform our Events[] into a transposed form so that pandas can create a DataFrame with it.
-# We also want to add in patient_type information for each event
-
 eventsData = EventsData.fromEvents(events)
 eventsData.save()
