@@ -1,8 +1,9 @@
 from datetime import datetime
+import numpy as np
 import json
 import pandas as pd
 from enums import EventType
-from utils import serializeTimestamp, deserializeToTimestamp
+from utils import serializeTimestamp, DATE_FORMAT
 from build_patients import PatientsData
 
 class Event:
@@ -176,7 +177,7 @@ class EventsData:
   Omce initialized, events cannot be added or removed.
 
   Attributes:
-    events_df (DataFrame): a pandas DataFrame of all the events
+    events_df (DataFrame): a sorted pandas DataFrame of all the events
     patientsData (PatientsData): patient information
   """
 
@@ -203,7 +204,7 @@ class EventsData:
       patient_id (int): ID of the patient
 
     Returns:
-      datetime: date of death
+      numpy.datetime64: date of death
       None: if no death date found
     """
     event = self.events_df.loc[
@@ -213,7 +214,7 @@ class EventsData:
     if len(event) > 1:
       raise ValueError('there are >1 DEATH events for patient', patient_id)
 
-    return deserializeToTimestamp(event['event_date'].values[0]) if not event.empty else None
+    return event['event_date'].values[0] if not event.empty else None
 
   def findEnrollmentDate(self, patient_id):
     """
@@ -223,7 +224,7 @@ class EventsData:
       patient_id (int): ID of the patient
 
     Returns:
-      datetime: date of enrollment
+      numpy.datetime64: date of enrollment
     """
     event = self.events_df.loc[(self.events_df['id'] == patient_id) & (self.events_df['event_type'] == EventType.ENROLLMENT)]
 
@@ -233,59 +234,65 @@ class EventsData:
     if len(event) > 1:
       raise ValueError('there are >1 ENROLLMENT events for patient', patient_id)
 
-    return deserializeToTimestamp(event['event_date'].values[0])
+    return event['event_date'].values[0]
 
-  def findPostEnrollmentEvents(self, patient_id):
+  def findEventsBetween(self, patient_id, date_from, date_to):
     """
-    Retrieves all events after enrollment
+    Retrieves all events between 2 dates
 
     Parameters:
       patient_id (int): ID of the patient
+      date_from (numpy.datetime64): after this date
+      date_to (numpy.datetime64): before this date
 
     Returns:
       DataFrame.loc: all post enrollment events of a patient
     """
-    all_events = self.events_df.loc[self.events_df['id'] == patient_id]
+    return self.events_df.loc[
+      (self.events_df['id'] == patient_id) &
+      (self.events_df['event_date'] > date_from) &
+      (self.events_df['event_date'] < date_to)
+    ]
 
-    all_postenrollment_events = all_events.loc[(all_events['event_type'] == EventType.ENROLLMENT).idxmax():]
-
-    return all_postenrollment_events
-
-  def findEmergencyDepartmentUses(self, patient_id):
+  def findEmergencyDepartmentUsesBetween(self, patient_id, date_from, date_to):
     """
-    Retrieves all emergency department uses AFTER enrollment
+    Retrieves all emergency department uses between 2 dates
 
     Parameters:
       patient_id (int): ID of the patient
+      date_from (numpy.datetime64): after this date
+      date_to (numpy.datetime64): before this date
 
     Returns:
       DataFrame.loc: all emergency department uses AFTER enrollment
     """
-    postEnrollmentEvents = self.findPostEnrollmentEvents(patient_id)
+    all_events_after_enrollment_before_end = self.findEventsBetween(patient_id, date_from, date_to)
 
-    return postEnrollmentEvents.loc[
-      (postEnrollmentEvents['event_type'] == EventType.ADMIT_ED) |
-      (postEnrollmentEvents['event_type'] == EventType.ADMIT_ED_ENDS) |
-      (postEnrollmentEvents['event_type'] == EventType.ED_NOADMIT)
+    return all_events_after_enrollment_before_end.loc[
+      (all_events_after_enrollment_before_end['event_type'] == EventType.ADMIT_ED) |
+      (all_events_after_enrollment_before_end['event_type'] == EventType.ADMIT_ED_ENDS) |
+      (all_events_after_enrollment_before_end['event_type'] == EventType.ED_NOADMIT)
     ]
 
-  def findUnplannedInpatientAdmissions(self, patient_id):
+  def findUnplannedInpatientAdmissionsBetween(self, patient_id, date_from, date_to):
     """
-    Retrieves all unplanned inpatient admissions AFTER enrollment
+    Retrieves all unplanned inpatient admissions between 2 dates
 
     Parameters:
       patient_id (int): ID of the patient
+      date_from (numpy.datetime64): after this date
+      date_to (numpy.datetime64): before this date
 
     Returns:
       DataFrame.loc: all unplanned inpatient admissions AFTER enrollment
     """
-    postEnrollmentEvents = self.findPostEnrollmentEvents(patient_id)
+    all_events_after_enrollment_before_end = self.findEventsBetween(patient_id, date_from, date_to)
 
-    return postEnrollmentEvents.loc[
-      (postEnrollmentEvents['event_type'] == EventType.ADMIT_ED) |
-      (postEnrollmentEvents['event_type'] == EventType.ADMIT_ED_ENDS) |
-      (postEnrollmentEvents['event_type'] == EventType.ADMIT_CLINIC) |
-      (postEnrollmentEvents['event_type'] == EventType.ADMIT_CLINIC_ENDS)
+    return all_events_after_enrollment_before_end.loc[
+      (all_events_after_enrollment_before_end['event_type'] == EventType.ADMIT_ED) |
+      (all_events_after_enrollment_before_end['event_type'] == EventType.ADMIT_ED_ENDS) |
+      (all_events_after_enrollment_before_end['event_type'] == EventType.ADMIT_CLINIC) |
+      (all_events_after_enrollment_before_end['event_type'] == EventType.ADMIT_CLINIC_ENDS)
     ]
 
   def save(self, loc='processed_data/events.csv'):
@@ -296,7 +303,7 @@ class EventsData:
       loc (str): Location on disk to save to. Uses default location if none provided.
     """
     print(self.events_df)
-    self.events_df.to_csv(loc, index=False)
+    self.events_df.to_csv(loc, index=False, date_format=DATE_FORMAT)
     return
 
   @classmethod
@@ -310,7 +317,8 @@ class EventsData:
     Returns:
       EventsData: an EventsData object
     """
-    events_df = pd.read_csv(loc)
+    events_df = pd.read_csv(loc, parse_dates=['event_date'], date_format=DATE_FORMAT)
+
     return EventsData(events_df, PatientsData.load())
 
   @classmethod
@@ -336,7 +344,7 @@ class EventsData:
     'event_type': [],
     'event_type_description': [],
 
-    'event_date': [] # str[]
+    'event_date': [] # numpy.datetime64[]
     }
 
     for event in events:
@@ -351,7 +359,7 @@ class EventsData:
       events_transposed['event_type'].append(event.type)
       events_transposed['event_type_description'].append(event.describeEventType())
 
-      events_transposed['event_date'].append(serializeTimestamp(event.date))
+      events_transposed['event_date'].append(np.datetime64(event.date))
 
     events_df = pd.DataFrame(data=events_transposed)
 

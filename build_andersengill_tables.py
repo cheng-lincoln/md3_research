@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from utils import deserializeToTimestamp, get_censor_date
+from utils import get_censor_date
 from enums import Censor, EventType, PatientType, PatientCompliance
 from build_events import EventsData
 
@@ -10,8 +10,8 @@ class AndersenGillFormatter:
 
   Attributes:
     patient_id (int): ID of the patient
-    start_date (datetime): start date used in the analysis (enrollment date)
-    end_date (datetime): end date used in the analysis (derived death date, if any, and censor date)
+    start_date (numpy.datetime64): start date used in the analysis (enrollment date)
+    end_date (numpy.datetime64): end date used in the analysis (derived death date, if any, and censor date)
     itt (int): 0 = usual, 1 = sparkle
     at (int): 0 = usual or sparkle-noncompliant, 1 = sparkle-compliant
     TODO pp (int): 0 = usual, 1 = sparkle-compliant
@@ -40,9 +40,17 @@ class AndersenGillFormatter:
     self.itt = 1 if patient_type == PatientType.SPARKLE else 0
     self.at = 1 if (patient_type == PatientType.SPARKLE and patient_compliance == PatientCompliance.SPARKLE_COMPLIANT) else 0
 
-    self.emergency_department_uses = eventsData.findEmergencyDepartmentUses(patient_id)
+    self.emergency_department_uses = eventsData.findEmergencyDepartmentUsesBetween(
+      patient_id,
+      self.start_date,
+      self.end_date
+    )
 
-    self.unplanned_inpatient_admissions = eventsData.findUnplannedInpatientAdmissions(patient_id)
+    self.unplanned_inpatient_admissions = eventsData.findUnplannedInpatientAdmissionsBetween(
+      patient_id,
+      self.start_date,
+      self.end_date
+    )
 
     self.patient_id = patient_id
 
@@ -77,10 +85,10 @@ class AndersenGillFormatter:
         ...
       ]
     """
-
+    # Somehow when we convert to_list, pandas converts all numpy.datetime64 to pd.Timestamp -.-
     event_dates = events['event_date'].to_list()
-    event_dts = [self.start_date] + [deserializeToTimestamp(event_date) for event_date in event_dates] + [self.end_date]
-    days = [(event_dts[i+1]-event_dts[i]).days for i in range(len(event_dts)-1)]
+    event_timestamps = [pd.Timestamp(self.start_date)] + [event_date for event_date in event_dates] + [pd.Timestamp(self.end_date)]
+    days = [(event_timestamps[i+1]-event_timestamps[i]).days for i in range(len(event_timestamps)-1)]
 
     # Create a mask to remove timeframe where patient is hospitalized,
     # since during this period the patient is not at risk of an acute event

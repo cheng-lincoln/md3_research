@@ -1,4 +1,7 @@
 from datetime import datetime
+import numpy as np
+
+DATE_FORMAT = '%Y-%m-%d'
 
 def serializeTimestamp(timeStamp):
   """
@@ -7,7 +10,7 @@ def serializeTimestamp(timeStamp):
   Returns:
     str: the str equivalent
   """
-  return timeStamp.strftime('%Y-%m-%d')
+  return timeStamp.strftime(DATE_FORMAT)
 
 def deserializeToTimestamp(timeString):
   """
@@ -16,12 +19,12 @@ def deserializeToTimestamp(timeString):
   Returns:
     datetime: the datetime equivalent
   """
-  return datetime.strptime(timeString, '%Y-%m-%d') if timeString is not None else None
+  return datetime.strptime(timeString, DATE_FORMAT) if timeString is not None else None
 
 def get_censor_date():
   """
   Returns:
-    datetime: The censor date used
+    numpy.datetime64: The censor date used
   """
-  return deserializeToTimestamp('2024-04-30')
+  return np.datetime64(deserializeToTimestamp('2024-04-30'))
 
