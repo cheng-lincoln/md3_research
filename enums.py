@@ -22,3 +22,9 @@ class PatientType(IntEnum):
 class Censor(IntEnum):
   CENSORED = 0
   EVENT_OCCURRED = 1
+
+class PatientCompliance(IntEnum):
+  # Compliance = completed >= 12 of the IPOS questionnairs (total 16)
+  NOT_APPLICABLE = 0
+  SPARKLE_COMPLIANT = 10
+  SPARKLE_NONCOMPLIANT = 11

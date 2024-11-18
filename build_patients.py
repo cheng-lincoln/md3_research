@@ -1,6 +1,7 @@
 import pandas as pd
 import json
-from enums import PatientType
+from datetime import datetime
+from enums import PatientType, PatientCompliance
 
 class Patient:
   """
@@ -9,16 +10,21 @@ class Patient:
   Attributes:
     id (int): The ID of the patient
     type (PatientType): Whether the patient is randomized to SPARKLE or Usual intervention
+    compliance (PatientCompliance): Whether the patient is compliant to SPARKLE intervention (if SPARKLE)
   """
 
-  def __init__(self, id, patient_type):
+  def __init__(self, id, patient_type, compliance=None):
     """
     Parameters:
       id (int): The ID of the patient
-      ptype (PatientType): Whether the patient is randomized to SPARKLE or Usual intervention
+      patient_type (PatientType): Whether the patient is randomized to SPARKLE or Usual intervention
+      compliance (PatientCompliance): Whether the patient is compliant to SPARKLE intervention (if SPARKLE)
     """
     self.id = id
     self.type = patient_type
+
+    # optional
+    self.compliance = compliance
 
   def __repr__(self):
     return json.dumps(
@@ -36,6 +42,20 @@ class Patient:
       str: The patient type (i.e SPARKLE or Usual) in descriptive form.
     """
     return PatientType(self.type).name
+
+  def describePatientCompliance(self):
+    """
+    Returns:
+      str: The patient compliance in descriptive form.
+    """
+    return PatientCompliance(self.compliance).name
+
+  def setCompliance(self, compliance):
+    """
+    Parameters:
+      compliance (PatientCompliance): Whether the patient is compliant to SPARKLE intervention (if SPARKLE)
+    """
+    self.compliance = compliance
 
 def extractPatient(row):
   """
@@ -59,6 +79,24 @@ def extractPatient(row):
     id,
     PatientType.SPARKLE if row['Combined_data_allocation'] == 'SPARKLE' else PatientType.USUAL
   )
+
+def extractCompliance(ipos, patient_id):
+  """
+  Extracts compliance information of a patient from ipos.xlsx
+
+  Args:
+    ipos (DataFrame): the dataframe of the ipos.xlsx file
+    patient_id (int): The Patient ID
+
+  Returns:
+    int: number of weeks of IPOS questionnaire completed by the patient
+  """
+  ipos_completed_dates = ipos.loc[
+    (ipos['record_id'] == patient_id) &
+    ipos['event_name'].str.contains('^ipos_week_(?:1[0-6]{1}|0[1-9]{1})$', regex=True)
+  ]['ipos_completed_date'].to_list()
+
+  return sum(1 for ipos_completed_date in ipos_completed_dates if isinstance(ipos_completed_date, datetime))
 
 class PatientsData:
   """
@@ -112,7 +150,8 @@ class PatientsData:
 
     for patient_id, patient in self.patients.items():
       storage_obj[patient_id] = {
-        'patient_type': patient.type
+        'patient_type': patient.type,
+        'compliance': patient.compliance
       }
 
     with open(loc, 'w') as f:
@@ -138,7 +177,8 @@ class PatientsData:
       patientsData.addPatient(
         Patient(
           int(patient_id),
-          patient_info['patient_type']
+          patient_info['patient_type'],
+          patient_info['compliance']
         )
       )
 
@@ -147,9 +187,25 @@ class PatientsData:
 # -------
 patientsData = PatientsData()
 
+ipos = pd.read_excel('data/ipos.xlsx')
+
 patients_info = pd.read_excel('data/patient_information.xlsx')
 for index, row in patients_info.iterrows():
   patient = extractPatient(row)
+
+  ipos_weeks_completed = extractCompliance(ipos, patient.id)
+  if (patient.type == PatientType.SPARKLE):
+    # see Enums.py for definition of compliance
+    patient.setCompliance(
+      PatientCompliance.SPARKLE_COMPLIANT if ipos_weeks_completed >= 12
+      else PatientCompliance.SPARKLE_NONCOMPLIANT
+    )
+  else:
+    if (ipos_weeks_completed > 0):
+      raise ValueError('Patient {0} is usual intervention but has >0 IPOS questionnaires completed'.format(patient.id))
+
+    patient.setCompliance(PatientCompliance.NOT_APPLICABLE)
+
   patientsData.addPatient(patient)
 
 patientsData.save()
