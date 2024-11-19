@@ -193,13 +193,13 @@ addRow(
 )
 addRow(
   results_columns,
-  'Incidence (Emergency Department Visits)\n[visits/person/year]',
+  'Incidence (Emergency Department Visits) [visits/person/year]',
   '{:.2f}'.format(itt_control_emergency_visits/(itt_control_followup_days / 365)),
   '{:.2f}'.format(itt_intervention_emergency_visits/(itt_intervention_followup_days / 365)),
 )
 addRow(
   results_columns,
-  'Incidence (Unplanned Inpatient Admissions)\n[visits/person/year]',
+  'Incidence (Unplanned Inpatient Admissions) [visits/person/year]',
   '{:.2f}'.format(itt_control_unplanned_inpatient_admissions/(itt_control_followup_days / 365)),
   '{:.2f}'.format(itt_intervention_unplanned_inpatient_admissions/(itt_intervention_followup_days / 365)),
 )
