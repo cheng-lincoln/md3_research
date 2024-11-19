@@ -43,8 +43,7 @@ class Patient:
   def __repr__(self):
     return json.dumps(
       self.toJSON(),
-      indent=2,
-      sort_keys=True
+      indent=2
     )
 
   def describePatientType(self):
@@ -94,7 +93,7 @@ class Demographics():
       gender,
       race,
       marital_status,
-      education,
+      education_level,
       employment_status,
       performance,
       cancer_type_layman,
@@ -103,7 +102,7 @@ class Demographics():
     self.gender = gender
     self.race = race
     self.marital_status = marital_status
-    self.education = education
+    self.education_level = education_level
     self.employment_status = employment_status
     self.performance = performance
     self.cancer_type_layman = cancer_type_layman
@@ -114,7 +113,7 @@ class Demographics():
       'gender': self.gender,
       'race': self.race,
       'marital_status': self.marital_status,
-      'education': self.education,
+      'education_level': self.education_level,
       'employment_status': self.employment_status,
       'performance': self.performance,
       'cancer_type_layman': self.cancer_type_layman,
@@ -123,7 +122,7 @@ class Demographics():
         'gender': self.describeGender(),
         'race': self.describeRace(),
         'marital_status': self.describeMaritalStatus(),
-        'education': self.describeEducationLevel(),
+        'education_level': self.describeEducationLevel(),
         'employment_status': self.describeEmploymentStatus(),
         'performance': self.describePerformance(),
         'cancer_type_layman': self.describeCancerTypeLayman(),
@@ -134,8 +133,7 @@ class Demographics():
   def __repr__(self):
     return json.dumps(
       self.toJSON(),
-      indent=2,
-      sort_keys=True
+      indent=2
     )
 
   def describeGender(self):
@@ -148,7 +146,7 @@ class Demographics():
     return MaritalStatus(self.marital_status).name
 
   def describeEducationLevel(self):
-    return EducationLevel(self.education).name
+    return EducationLevel(self.education_level).name
 
   def describeEmploymentStatus(self):
     return EmploymentStatus(self.employment_status).name
@@ -226,7 +224,7 @@ def extractDemographics(ipos, patient_id):
   gender = patient_demographics['Male_gender'].values[0]
   race = patient_demographics['pt_race'].values[0]
   marital_status = patient_demographics['pt_marital_status'].values[0]
-  education = patient_demographics['pt_education_level'].values[0]
+  education_level = patient_demographics['pt_education_level'].values[0]
   employment_status = patient_demographics['pt_employment'].values[0]
   performance = patient_demographics['pt_performance_status'].values[0]
   cancer_type_layman = patient_demographics['pt_primary_cancer'].values[0]
@@ -250,7 +248,7 @@ def extractDemographics(ipos, patient_id):
     gender,
     race,
     marital_status,
-    education,
+    education_level,
     employment_status,
     performance,
     cancer_type_layman,
@@ -311,7 +309,7 @@ class PatientsData:
       storage_obj[patient_id] = patient.toJSON()
 
     with open(loc, 'w') as f:
-      json.dump(storage_obj, f, sort_keys=True, indent=2)
+      json.dump(storage_obj, f, indent=2)
 
   @classmethod
   def load(cls, loc='processed_data/patients.json'):
@@ -339,7 +337,7 @@ class PatientsData:
             patient_info['demographics']['gender'],
             patient_info['demographics']['race'],
             patient_info['demographics']['marital_status'],
-            patient_info['demographics']['education'],
+            patient_info['demographics']['education_level'],
             patient_info['demographics']['employment_status'],
             patient_info['demographics']['performance'],
             patient_info['demographics']['cancer_type_layman'],
