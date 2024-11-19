@@ -38,7 +38,7 @@ Patient **109** is excluded from the analysis.
 
 #### Overview
 
-![image](https://github.com/user-attachments/assets/4d8eda9e-4589-414f-a07f-0f6f411c7a51)
+<img width="737" alt="image" src="https://github.com/user-attachments/assets/3e5c07cb-4dd3-4afa-be44-2b589e016fa4">
 
 
 
