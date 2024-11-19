@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from utils import get_censor_date
-from enums import Censor, EventType, PatientType, PatientCompliance
+from utils import get_censor_date, findATGroup, findITTGroup
+from enums import Censor, EventType
 from build_events import EventsData
 
 class AndersenGillFormatter:
@@ -37,8 +37,8 @@ class AndersenGillFormatter:
 
     patient_type = eventsData.getPatientType(patient_id)
     patient_compliance = eventsData.getPatientCompliance(patient_id)
-    self.itt = 1 if patient_type == PatientType.SPARKLE else 0
-    self.at = 1 if (patient_type == PatientType.SPARKLE and patient_compliance == PatientCompliance.SPARKLE_COMPLIANT) else 0
+    self.itt = findITTGroup(patient_type, patient_compliance)
+    self.at = findATGroup(patient_type, patient_compliance)
 
     self.emergency_department_uses = eventsData.findEmergencyDepartmentUsesBetween(
       patient_id,
