@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 from datetime import datetime
-from enums import PatientType, PatientCompliance
+from enums import PatientType, PatientCompliance, Gender, Race, MaritalStatus, EducationLevel, EmploymentStatus, Performance, CancerTypeLayman, TreatmentType
 
 class Patient:
   """
@@ -11,9 +11,10 @@ class Patient:
     id (int): The ID of the patient
     type (PatientType): Whether the patient is randomized to SPARKLE or Usual intervention
     compliance (PatientCompliance): Whether the patient is compliant to SPARKLE intervention (if SPARKLE)
+    demographics (Demographics): Demographics of the patient
   """
 
-  def __init__(self, id, patient_type, compliance=None):
+  def __init__(self, id, patient_type, compliance=None, demographics=None):
     """
     Parameters:
       id (int): The ID of the patient
@@ -25,15 +26,25 @@ class Patient:
 
     # optional
     self.compliance = compliance
+    self.demographics = demographics
+
+  def toJSON(self):
+    return {
+      'id': self.id,
+      'patient_type': self.type,
+      'compliance': self.compliance,
+      'demographics': self.demographics.toJSON(),
+      '_description': {
+        'patient_type': self.describePatientType(),
+        'compliance': self.describePatientCompliance(),
+      }
+    }
 
   def __repr__(self):
     return json.dumps(
-      {
-        'id': self.id,
-        'patient_type': self.type,
-        'patient_type_description': self.describePatientType()
-      },
-      indent=2
+      self.toJSON(),
+      indent=2,
+      sort_keys=True
     )
 
   def describePatientType(self):
@@ -56,6 +67,104 @@ class Patient:
       compliance (PatientCompliance): Whether the patient is compliant to SPARKLE intervention (if SPARKLE)
     """
     self.compliance = compliance
+
+  def setDemographics(self, demographics):
+    """
+    Parameters:
+      demographics (Demographics): Demographics of the patient
+    """
+    self.demographics = demographics
+
+class Demographics():
+  """
+  This class stores demographics (of a patient).
+
+  Attributes:
+    gender (Gender):
+    race (Race):
+    marital_status (MaritalStatus):
+    education_level (EducationLevel):
+    employment_status (EmploymentStatus):
+    performance (Performance):
+    cancer_type_layman (CancerTypeLayman):
+    treatment_types (TreatmentType[]):
+  """
+  def __init__(
+      self,
+      gender,
+      race,
+      marital_status,
+      education,
+      employment_status,
+      performance,
+      cancer_type_layman,
+      treatment_types
+    ):
+    self.gender = gender
+    self.race = race
+    self.marital_status = marital_status
+    self.education = education
+    self.employment_status = employment_status
+    self.performance = performance
+    self.cancer_type_layman = cancer_type_layman
+    self.treatment_types = treatment_types
+
+  def toJSON(self):
+    return {
+      'gender': self.gender,
+      'race': self.race,
+      'marital_status': self.marital_status,
+      'education': self.education,
+      'employment_status': self.employment_status,
+      'performance': self.performance,
+      'cancer_type_layman': self.cancer_type_layman,
+      'treatment_types': self.treatment_types,
+      '_description': {
+        'gender': self.describeGender(),
+        'race': self.describeRace(),
+        'marital_status': self.describeMaritalStatus(),
+        'education': self.describeEducationLevel(),
+        'employment_status': self.describeEmploymentStatus(),
+        'performance': self.describePerformance(),
+        'cancer_type_layman': self.describeCancerTypeLayman(),
+        'treatment_types': self.describeTreatmentTypes()
+      }
+    }
+
+  def __repr__(self):
+    return json.dumps(
+      self.toJSON(),
+      indent=2,
+      sort_keys=True
+    )
+
+  def describeGender(self):
+    return Gender(self.gender).name
+
+  def describeRace(self):
+    return Race(self.race).name
+
+  def describeMaritalStatus(self):
+    return MaritalStatus(self.marital_status).name
+
+  def describeEducationLevel(self):
+    return EducationLevel(self.education).name
+
+  def describeEmploymentStatus(self):
+    return EmploymentStatus(self.employment_status).name
+
+  def describePerformance(self):
+    return Performance(self.performance).name
+
+  def describeCancerTypeLayman(self):
+    return CancerTypeLayman(self.cancer_type_layman).name
+
+  def describeTreatmentTypes(self):
+    return [
+      TreatmentType(treatment_type).name
+      for treatment_type
+      in self.treatment_types
+    ]
 
 def extractPatient(row):
   """
@@ -97,6 +206,56 @@ def extractCompliance(ipos, patient_id):
   ]['ipos_completed_date'].to_list()
 
   return sum(1 for ipos_completed_date in ipos_completed_dates if isinstance(ipos_completed_date, datetime))
+
+def extractDemographics(ipos, patient_id):
+  """
+  Extracts demographics information of a patient from ipos.xlsx
+
+  Args:
+    ipos (DataFrame): the dataframe of the ipos.xlsx file
+    patient_id (int): The Patient ID
+
+  Returns:
+    (Demographics): a demographic object
+  """
+  patient_demographics = ipos.loc[
+    (ipos['record_id'] == patient_id) &
+    (ipos['event_name'] == 'demographics')
+  ]
+
+  gender = patient_demographics['Male_gender'].values[0]
+  race = patient_demographics['pt_race'].values[0]
+  marital_status = patient_demographics['pt_marital_status'].values[0]
+  education = patient_demographics['pt_education_level'].values[0]
+  employment_status = patient_demographics['pt_employment'].values[0]
+  performance = patient_demographics['pt_performance_status'].values[0]
+  cancer_type_layman = patient_demographics['pt_primary_cancer'].values[0]
+  TREATMENT_TYPES = [
+    TreatmentType.SURGERY,
+    TreatmentType.RADIOTHERAPY,
+    TreatmentType.CHEMOTHERAPY,
+    TreatmentType.IMMUNOTHERAPY,
+    TreatmentType.OTHERS
+  ]
+  treatment_type_flags = [
+    patient_demographics['pt_cancer_treatment_type___1'].values[0],
+    patient_demographics['pt_cancer_treatment_type___2'].values[0],
+    patient_demographics['pt_cancer_treatment_type___3'].values[0],
+    patient_demographics['pt_cancer_treatment_type___4'].values[0],
+    patient_demographics['pt_cancer_treatment_type___5'].values[0]
+  ]
+  treatment_types = [row for row, keep in zip(TREATMENT_TYPES, treatment_type_flags) if keep]
+
+  return Demographics(
+    gender,
+    race,
+    marital_status,
+    education,
+    employment_status,
+    performance,
+    cancer_type_layman,
+    treatment_types
+  )
 
 class PatientsData:
   """
@@ -149,10 +308,7 @@ class PatientsData:
     storage_obj = {}
 
     for patient_id, patient in self.patients.items():
-      storage_obj[patient_id] = {
-        'patient_type': patient.type,
-        'compliance': patient.compliance
-      }
+      storage_obj[patient_id] = patient.toJSON()
 
     with open(loc, 'w') as f:
       json.dump(storage_obj, f, sort_keys=True, indent=2)
@@ -178,7 +334,17 @@ class PatientsData:
         Patient(
           int(patient_id),
           patient_info['patient_type'],
-          patient_info['compliance']
+          patient_info['compliance'],
+          Demographics(
+            patient_info['demographics']['gender'],
+            patient_info['demographics']['race'],
+            patient_info['demographics']['marital_status'],
+            patient_info['demographics']['education'],
+            patient_info['demographics']['employment_status'],
+            patient_info['demographics']['performance'],
+            patient_info['demographics']['cancer_type_layman'],
+            patient_info['demographics']['treatment_types']
+          )
         )
       )
 
@@ -205,6 +371,9 @@ for index, row in patients_info.iterrows():
       raise ValueError('Patient {0} is usual intervention but has >0 IPOS questionnaires completed'.format(patient.id))
 
     patient.setCompliance(PatientCompliance.NOT_APPLICABLE)
+
+  demographics = extractDemographics(ipos, patient.id)
+  patient.setDemographics(demographics)
 
   patientsData.addPatient(patient)
 
