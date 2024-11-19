@@ -4,6 +4,26 @@ from enums import *
 from build_patients import PatientsData
 from build_events import EventsData
 
+def addRow(results_columns, characteristic_column_value, control_column_value, intervention_column_value):
+  """
+  Adds a row to the results table
+
+  Parameters:
+    results_columns ({
+      'characteristic': [],
+      'itt (control)': [], # itt = 0
+      'itt (intervention)': []
+    }): a transposed object used to eventually create a DataFrame
+
+  Returns:
+    [control_column_value, intervention_column_value]: the values in the control and intervention column
+  """
+  results_columns['characteristic'].append(characteristic_column_value)
+  results_columns['itt (control)'].append(control_column_value)
+  results_columns['itt (intervention)'].append(intervention_column_value)
+
+  return [control_column_value, intervention_column_value]
+
 def addEmptyRow(results_columns):
   """
   A convenience function to add an empty row to the results table
@@ -16,13 +36,9 @@ def addEmptyRow(results_columns):
     }): a transposed object used to eventually create a DataFrame
 
   Returns:
-    results_columns
+    ['', '']: the values in the control and intervention column
   """
-  results_columns['characteristic'].append('')
-  results_columns['itt (control)'].append('')
-  results_columns['itt (intervention)'].append('')
-
-  return results_columns
+  return addRow(results_columns, '---', '---', '---')
 
 def addBaselineCharacteristics(results_columns, characteristic_name, table, condition):
   """
@@ -32,25 +48,21 @@ def addBaselineCharacteristics(results_columns, characteristic_name, table, cond
     results_columns ({
       'characteristic': [],
       'itt (control)': [], # itt = 0
-      'itt (intervention)': []
+      'itt (intervention)': [] # itt = 1
     }): a transposed object used to eventually create a DataFrame
     characteristic_name (string): name of the characteristic to aggregate
     table (DataFrame): the table to analyze
-    condition (??): example => (patients['gender'] == Gender.FEMALE)
+    condition (??): example => (table['gender'] == Gender.FEMALE)
 
   Returns:
-    results_columns
+    [, ]: the values in the control and intervention column
   """
-  results_columns['characteristic'].append(characteristic_name)
-  results_columns['itt (control)'].append(
-    len(table[(table['itt'] == 0) & condition])
-  )
-  results_columns['itt (intervention)'].append(
+  return addRow(
+    results_columns,
+    characteristic_name,
+    len(table[(table['itt'] == 0) & condition]),
     len(table[(table['itt'] == 1) & condition])
   )
-
-  return results_columns
-
 # ---
 
 patientsData = PatientsData.load()
@@ -148,18 +160,48 @@ events = eventsData.events_df
 events['itt'] = events.apply(lambda row: findITTGroup(row['patient_type'], row['patient_compliance']), axis=1)
 events['at'] = events.apply(lambda row: findATGroup(row['patient_type'], row['patient_compliance']), axis=1)
 
-addBaselineCharacteristics(
+itt_control_emergency_visits, itt_intervention_emergency_visits = addBaselineCharacteristics(
   results_columns,
   'Emergency Department Visits',
   events,
   ((events['event_type'] == EventType.ED_NOADMIT) | (events['event_type'] == EventType.ADMIT_ED))
 )
 
-addBaselineCharacteristics(
+itt_control_unplanned_inpatient_admissions, itt_intervention_unplanned_inpatient_admissions = addBaselineCharacteristics(
   results_columns,
   'Unplanned Inpatient Admissions',
   events,
   ((events['event_type'] == EventType.ADMIT_ED) | (events['event_type'] == EventType.ADMIT_CLINIC))
+)
+
+itt_control_followup_days = 0
+itt_intervention_followup_days = 0
+for patient_id in [i for i in range(1,241) if i != 109]:
+  start_date, end_date = eventsData.findEffectiveStartEndDates(patient_id)
+  followup_days = (pd.Timestamp(end_date) - pd.Timestamp(start_date)).days
+  if (patients[(patients['id'] == patient_id)]['itt'].values[0] == 0):
+    itt_control_followup_days += followup_days
+  else:
+    itt_intervention_followup_days += followup_days
+
+# addRow(results_columns, 'Follow-Up [person-days]', itt_control_followup_days, itt_intervention_followup_days)
+addRow(
+  results_columns,
+  'Follow-Up [person-years]',
+  '{:.2f}'.format(itt_control_followup_days / 365),
+  '{:.2f}'.format(itt_intervention_followup_days / 365)
+)
+addRow(
+  results_columns,
+  'Incidence (Emergency Department Visits)\n[visits/person/year]',
+  '{:.2f}'.format(itt_control_emergency_visits/(itt_control_followup_days / 365)),
+  '{:.2f}'.format(itt_intervention_emergency_visits/(itt_intervention_followup_days / 365)),
+)
+addRow(
+  results_columns,
+  'Incidence (Unplanned Inpatient Admissions)\n[visits/person/year]',
+  '{:.2f}'.format(itt_control_unplanned_inpatient_admissions/(itt_control_followup_days / 365)),
+  '{:.2f}'.format(itt_intervention_unplanned_inpatient_admissions/(itt_intervention_followup_days / 365)),
 )
 
 results = pd.DataFrame(data=results_columns)
