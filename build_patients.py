@@ -74,7 +74,7 @@ class Patient:
     """
     self.demographics = demographics
 
-class Demographics():
+class Demographics:
   """
   This class stores demographics (of a patient).
 
