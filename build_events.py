@@ -3,7 +3,7 @@ import numpy as np
 import json
 import pandas as pd
 from enums import EventType
-from utils import serializeTimestamp, DATE_FORMAT
+from utils import serializeTimestamp, DATE_FORMAT, get_censor_date
 from build_patients import PatientsData
 
 class Event:
@@ -235,6 +235,27 @@ class EventsData:
       raise ValueError('there are >1 ENROLLMENT events for patient', patient_id)
 
     return event['event_date'].values[0]
+
+  def findEffectiveStartEndDates(self, patient_id):
+    """
+    Returns the effective start and end date of a patient
+
+    Parameters:
+      patient_id (int): ID of the patient
+
+    Returns:
+      [start_date (numpy.datetime64), end_date (numpy.datetime64)]
+    """
+    enrollment_date = self.findEnrollmentDate(patient_id)
+
+    censor_date = get_censor_date()
+    if (censor_date < enrollment_date):
+      raise ValueError('patient {0} is enrolled after the censor date'.format(patient_id))
+
+    death_date = self.findDeathDate(patient_id)
+    end_date = censor_date if (death_date is None) or (death_date > censor_date) else death_date
+
+    return [enrollment_date, end_date]
 
   def findEventsBetween(self, patient_id, date_from, date_to):
     """

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from utils import get_censor_date, findATGroup, findITTGroup
+from utils import findATGroup, findITTGroup
 from enums import Censor, EventType
 from build_events import EventsData
 
@@ -25,15 +25,9 @@ class AndersenGillFormatter:
       patient_id (int): ID of the patient
       eventsData (EventsDAta): an EventsData object
     """
-    enrollment_date = eventsData.findEnrollmentDate(patient_id)
-    self.start_date = enrollment_date
-
-    censor_date = get_censor_date()
-    if (censor_date < enrollment_date):
-      raise ValueError('patient {0} is enrolled after the censor date'.format(patient_id))
-
-    death_date = eventsData.findDeathDate(patient_id)
-    self.end_date = censor_date if (death_date is None) or (death_date > censor_date) else death_date
+    start_date, end_date = eventsData.findEffectiveStartEndDates(patient_id)
+    self.start_date = start_date
+    self.end_date = end_date
 
     patient_type = eventsData.getPatientType(patient_id)
     patient_compliance = eventsData.getPatientCompliance(patient_id)
