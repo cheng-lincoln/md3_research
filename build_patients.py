@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 from datetime import datetime
-from enums import PatientType, PatientCompliance, Gender, Race, MaritalStatus, EducationLevel, EmploymentStatus, Performance, CancerTypeLayman, TreatmentType
+from enums import *
 
 class Patient:
   """
