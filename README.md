@@ -1,8 +1,9 @@
 ## Background
 
-This code repository is created for the investigation of ...
+This code repository is created for the investigation of:
 
-#### Others
+> Effect of SPARKLE intervention vs usual intervention on acute healthcare utilization of stage 4 solid cancer patients in Singapore
+
 
 The censor date used is **30 Apr 2024**.
 
@@ -162,7 +163,7 @@ The important files and folders are explained:
 
 ###### Data Processing in Python
 
-1) First we want to initialize the required folders and check if we have the correct raw data files. To do this, run:
+1. First we want to initialize the required folders and check if we have the correct raw data files. To do this, run:
    ```bash
    python3 -m init
    
@@ -174,7 +175,7 @@ The important files and folders are explained:
    # After doing so, RUN THE ABOVE COMMAND AGAIN again to ensure that only green ticks appear
    ```
 
-2) Next, we run the code to extract patient information:
+2. Next, we run the code to extract patient information:
    ```bash
    python3 -m build_patients # this might take a few seconds
    ```
@@ -188,7 +189,7 @@ The important files and folders are explained:
    patients.json
    ```
 
-3) Next, we run the code to extract events:
+3. Next, we run the code to extract events:
    ```bash
    python3 -m build_events
    
@@ -196,7 +197,7 @@ The important files and folders are explained:
    # ...
    ```
 
-   This creates an `events.csv` file in the `processed_data` folder. We should be able to see it with this command:
+   This creates an `events.csv` file in the `processed_data` folder. We should be able to see it with:
 
    ```bash
    ls processed_data/
@@ -205,7 +206,23 @@ The important files and folders are explained:
    events.csv		patients.json
    ```
 
-4) Next we want to build the tables for Andersen-Gill model from the events. We do this by:
+4. At this point of time, it might be worthwhile to generate some baseline characteristics of patients across both control and intervention groups:
+
+   ```bash
+   python3 -m build_aggregations
+   ```
+
+   This creates `aggregations.md` file in the `results` folder. We should be able to see this with:
+
+   ```bash
+   ls results/
+   
+   # We should see the following line:
+   aggregations.md
+   ```
+
+5. Finally, we want to build the tables for Andersen-Gill model from the events. We do this by:
+
    ```bash
    python3 -m build_andersengill_tables
    
@@ -213,7 +230,7 @@ The important files and folders are explained:
    # (ignore the reprint of the events table)
    ```
 
-   This creates 2 files in the `processed_data` folder. Again, we can see them with:
+   This creates 2 files in the `processed_data`. We can see them with:
 
    ```bash
    ls processed_data/
