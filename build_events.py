@@ -323,7 +323,6 @@ class EventsData:
     Parameters:
       loc (str): Location on disk to save to. Uses default location if none provided.
     """
-    print(self.events_df)
     self.events_df.to_csv(loc, index=False, date_format=DATE_FORMAT)
     return
 

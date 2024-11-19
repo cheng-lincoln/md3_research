@@ -81,6 +81,7 @@ class Demographics():
   Attributes:
     gender (Gender):
     race (Race):
+    age (int):
     marital_status (MaritalStatus):
     education_level (EducationLevel):
     employment_status (EmploymentStatus):
@@ -91,6 +92,7 @@ class Demographics():
   def __init__(
       self,
       gender,
+      age,
       race,
       marital_status,
       education_level,
@@ -100,6 +102,7 @@ class Demographics():
       treatment_types
     ):
     self.gender = gender
+    self.age = age
     self.race = race
     self.marital_status = marital_status
     self.education_level = education_level
@@ -112,6 +115,7 @@ class Demographics():
     return {
       'gender': self.gender,
       'race': self.race,
+      'age': self.age,
       'marital_status': self.marital_status,
       'education_level': self.education_level,
       'employment_status': self.employment_status,
@@ -222,6 +226,7 @@ def extractDemographics(ipos, patient_id):
   ]
 
   gender = patient_demographics['Male_gender'].values[0]
+  age = patient_demographics['pt_age'].values[0]
   race = patient_demographics['pt_race'].values[0]
   marital_status = patient_demographics['pt_marital_status'].values[0]
   education_level = patient_demographics['pt_education_level'].values[0]
@@ -246,6 +251,7 @@ def extractDemographics(ipos, patient_id):
 
   return Demographics(
     gender,
+    age,
     race,
     marital_status,
     education_level,
@@ -335,6 +341,7 @@ class PatientsData:
           patient_info['compliance'],
           Demographics(
             patient_info['demographics']['gender'],
+            patient_info['demographics']['age'],
             patient_info['demographics']['race'],
             patient_info['demographics']['marital_status'],
             patient_info['demographics']['education_level'],

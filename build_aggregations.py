@@ -76,6 +76,7 @@ patients_columns = {
   'at': [],
 
   'gender': [],
+  'age': [],
   'race': [],
   'marital_status': [],
   'education_level': [],
@@ -99,6 +100,7 @@ for patient_id in [i for i in range(1,241) if i != 109]: # exclude patient 109
   patients_columns['at'].append(findATGroup(patient.type, patient.compliance))
 
   patients_columns['gender'].append(patient.demographics.gender)
+  patients_columns['age'].append(patient.demographics.age)
   patients_columns['race'].append(patient.demographics.race)
   patients_columns['marital_status'].append(patient.demographics.marital_status)
   patients_columns['education_level'].append(patient.demographics.education_level)
@@ -122,6 +124,18 @@ results_columns = {
 
 for gender in Gender:
   addBaselineCharacteristics(results_columns, Gender(gender).name.title(), patients, patients['gender'] == gender)
+addEmptyRow(results_columns)
+
+age0 = 0
+for age in [18, 35, 50, 65]:
+  addBaselineCharacteristics(
+    results_columns,
+    '{0} - {1} years old'.format(age0, age),
+    patients,
+    ((patients['age'] >= age0) & (patients['age'] < age))
+  )
+  age0 = age
+addBaselineCharacteristics(results_columns, '>{0} years old'.format(age0), patients, (patients['age'] >= age0))
 addEmptyRow(results_columns)
 
 for race in Race:

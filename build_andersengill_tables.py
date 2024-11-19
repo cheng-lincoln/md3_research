@@ -132,12 +132,10 @@ emergency_department_uses_table_df = pd.DataFrame(
   np.array(emergency_department_uses_table),
   columns=['id', 'itt', 'at', 'time0', 'time', 'status']
 )
-print(emergency_department_uses_table_df)
 emergency_department_uses_table_df.to_csv('processed_data/emergency_department_uses_table.csv', index=False)
 
 unplanned_inpatient_admissions_table_df = pd.DataFrame(
   np.array(unplanned_inpatient_admissions_table),
   columns=['id', 'itt', 'at', 'time0', 'time', 'status']
 )
-print(unplanned_inpatient_admissions_table_df)
 unplanned_inpatient_admissions_table_df.to_csv('processed_data/unplanned_inpatient_admissions_table.csv', index=False)
