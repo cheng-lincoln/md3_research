@@ -206,4 +206,6 @@ addRow(
 
 results = pd.DataFrame(data=results_columns)
 results.set_index('characteristic')
-print(results.to_markdown(index=False))
+
+with open('results/aggregations.md', 'w') as f:
+  print(results.to_markdown(index=False), file=f)
