@@ -1,7 +1,8 @@
-from build_patients import PatientsData
 import pandas as pd
 from utils import findITTGroup, findATGroup
 from enums import *
+from build_patients import PatientsData
+from build_events import EventsData
 
 def addEmptyRow(results_columns):
   """
@@ -23,9 +24,9 @@ def addEmptyRow(results_columns):
 
   return results_columns
 
-def addBaselineCharacteristics(results_columns, characteristic_name, condition):
+def addBaselineCharacteristics(results_columns, characteristic_name, table, condition):
   """
-  Adds a row of analysis where
+  A convenience function that adds a row baseline characteristics
 
   Parameters:
     results_columns ({
@@ -33,9 +34,8 @@ def addBaselineCharacteristics(results_columns, characteristic_name, condition):
       'itt (control)': [], # itt = 0
       'itt (intervention)': []
     }): a transposed object used to eventually create a DataFrame
-
     characteristic_name (string): name of the characteristic to aggregate
-
+    table (DataFrame): the table to analyze
     condition (??): example => (patients['gender'] == Gender.FEMALE)
 
   Returns:
@@ -43,10 +43,10 @@ def addBaselineCharacteristics(results_columns, characteristic_name, condition):
   """
   results_columns['characteristic'].append(characteristic_name)
   results_columns['itt (control)'].append(
-    len(patients[(patients['itt'] == 0) & condition])
+    len(table[(table['itt'] == 0) & condition])
   )
   results_columns['itt (intervention)'].append(
-    len(patients[(patients['itt'] == 1) & condition])
+    len(table[(table['itt'] == 1) & condition])
   )
 
   return results_columns
@@ -109,40 +109,58 @@ results_columns = {
 }
 
 for gender in Gender:
-  addBaselineCharacteristics(results_columns, Gender(gender).name.title(), patients['gender'] == gender)
+  addBaselineCharacteristics(results_columns, Gender(gender).name.title(), patients, patients['gender'] == gender)
 addEmptyRow(results_columns)
 
 for race in Race:
-  addBaselineCharacteristics(results_columns, Race(race).name.title(), patients['race'] == race)
+  addBaselineCharacteristics(results_columns, Race(race).name.title(), patients, patients['race'] == race)
 addEmptyRow(results_columns)
 
 for marital_status in MaritalStatus:
-  addBaselineCharacteristics(results_columns, MaritalStatus(marital_status).name.title(), patients['marital_status'] == marital_status)
+  addBaselineCharacteristics(results_columns, MaritalStatus(marital_status).name.title(), patients, patients['marital_status'] == marital_status)
 addEmptyRow(results_columns)
 
 for education_level in EducationLevel:
-  addBaselineCharacteristics(results_columns, EducationLevel(education_level).name.title(), patients['education_level'] == education_level)
+  addBaselineCharacteristics(results_columns, EducationLevel(education_level).name.title(), patients, patients['education_level'] == education_level)
 addEmptyRow(results_columns)
 
 for employment_status in EmploymentStatus:
-  addBaselineCharacteristics(results_columns, EmploymentStatus(employment_status).name.title(), patients['employment_status'] == employment_status)
+  addBaselineCharacteristics(results_columns, EmploymentStatus(employment_status).name.title(), patients, patients['employment_status'] == employment_status)
 addEmptyRow(results_columns)
 
 for performance in Performance:
-  addBaselineCharacteristics(results_columns, Performance(performance).name.title(), patients['performance'] == performance)
+  addBaselineCharacteristics(results_columns, Performance(performance).name.title(), patients, patients['performance'] == performance)
 addEmptyRow(results_columns)
 
 for cancer_type_layman in CancerTypeLayman:
-  addBaselineCharacteristics(results_columns, CancerTypeLayman(cancer_type_layman).name.title(), patients['cancer_type_layman'] == cancer_type_layman)
+  addBaselineCharacteristics(results_columns, CancerTypeLayman(cancer_type_layman).name.title(), patients, patients['cancer_type_layman'] == cancer_type_layman)
 addEmptyRow(results_columns)
 
-addBaselineCharacteristics(results_columns, TreatmentType.SURGERY.name.title(), patients['has_treatment_surgery'] == True)
-addBaselineCharacteristics(results_columns, TreatmentType.RADIOTHERAPY.name.title(), patients['has_treatment_radiotherapy'] == True)
-addBaselineCharacteristics(results_columns, TreatmentType.CHEMOTHERAPY.name.title(), patients['has_treatment_chemotherapy'] == True)
-addBaselineCharacteristics(results_columns, TreatmentType.IMMUNOTHERAPY.name.title(), patients['has_treatment_immunotherapy'] == True)
-addBaselineCharacteristics(results_columns, TreatmentType.OTHERS.name.title(), patients['has_treatment_others'] == True)
+addBaselineCharacteristics(results_columns, TreatmentType.SURGERY.name.title(), patients, patients['has_treatment_surgery'] == True)
+addBaselineCharacteristics(results_columns, TreatmentType.RADIOTHERAPY.name.title(), patients, patients['has_treatment_radiotherapy'] == True)
+addBaselineCharacteristics(results_columns, TreatmentType.CHEMOTHERAPY.name.title(), patients, patients['has_treatment_chemotherapy'] == True)
+addBaselineCharacteristics(results_columns, TreatmentType.IMMUNOTHERAPY.name.title(), patients, patients['has_treatment_immunotherapy'] == True)
+addBaselineCharacteristics(results_columns, TreatmentType.OTHERS.name.title(), patients, patients['has_treatment_others'] == True)
+addEmptyRow(results_columns)
 
+eventsData = EventsData.load()
+events = eventsData.events_df
+events['itt'] = events.apply(lambda row: findITTGroup(row['patient_type'], row['patient_compliance']), axis=1)
+events['at'] = events.apply(lambda row: findATGroup(row['patient_type'], row['patient_compliance']), axis=1)
 
+addBaselineCharacteristics(
+  results_columns,
+  'Emergency Department Visits',
+  events,
+  ((events['event_type'] == EventType.ED_NOADMIT) | (events['event_type'] == EventType.ADMIT_ED))
+)
+
+addBaselineCharacteristics(
+  results_columns,
+  'Unplanned Inpatient Admissions',
+  events,
+  ((events['event_type'] == EventType.ADMIT_ED) | (events['event_type'] == EventType.ADMIT_CLINIC))
+)
 
 results = pd.DataFrame(data=results_columns)
 results.set_index('characteristic')
