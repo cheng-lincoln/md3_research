@@ -1,71 +1,97 @@
 import pandas as pd
-from utils import findITTGroup, findATGroup
+from utils import findITTGroup, findATGroup, barify
 from enums import *
 from build_patients import PatientsData
 from build_events import EventsData
 
-def addRow(results_columns, characteristic_column_value, control_column_value, intervention_column_value):
-  """
-  Adds a row to the results table
+class Characteristic:
+  INDEX_COLUMN_NAME = 'characteristic'
+  CONTROL_COLUMN_NAME = 'control'
+  INTERVENTION_COLUMN_NAME = 'intervention'
+  CONTROL_VISUALIZATION_COLUMN_NAME = ' '
+  INTERVENTION_VISUALIZATION_COLUMN_NAME = '  '
 
-  Parameters:
-    results_columns ({
-      'characteristic': [],
-      'itt (control)': [], # itt = 0
-      'itt (intervention)': []
-    }): a transposed object used to eventually create a DataFrame
+  def __init__(self):
+    self.data = Characteristic.init_data()
+    self.is_visualization_generated = False
 
-  Returns:
-    [control_column_value, intervention_column_value]: the values in the control and intervention column
-  """
-  results_columns['characteristic'].append(characteristic_column_value)
-  results_columns['itt (control)'].append(control_column_value)
-  results_columns['itt (intervention)'].append(intervention_column_value)
+  def add_row(self, index_value, control_value, intervention_value):
+    self.data[Characteristic.INDEX_COLUMN_NAME].append(index_value)
+    self.data[Characteristic.CONTROL_COLUMN_NAME].append(control_value)
+    self.data[Characteristic.INTERVENTION_COLUMN_NAME].append(intervention_value)
 
-  return [control_column_value, intervention_column_value]
+    return [index_value, control_value, intervention_value]
 
-def addEmptyRow(results_columns):
-  """
-  A convenience function to add an empty row to the results table
+  def add_aggregation(self, index_value, table, condition):
+    return self.add_row(
+      index_value,
+      control_value = len(table[(table['itt'] == 0) & condition]),
+      intervention_value = len(table[(table['itt'] == 1) & condition]),
+    )
 
-  Parameters:
-    results_columns ({
-      'characteristic': [],
-      'itt (control)': [], # itt = 0
-      'itt (intervention)': []
-    }): a transposed object used to eventually create a DataFrame
+  def generate_visualizations(self, resolution = 20):
+    denominator = sum(self.data[Characteristic.CONTROL_COLUMN_NAME])
+    self.data[Characteristic.CONTROL_VISUALIZATION_COLUMN_NAME] = [
+      barify(value, denominator, resolution)
+      for value
+      in self.data[Characteristic.CONTROL_COLUMN_NAME]
+    ]
 
-  Returns:
-    ['', '']: the values in the control and intervention column
-  """
-  return addRow(results_columns, '---', '---', '---')
+    denominator = sum(self.data[Characteristic.INTERVENTION_COLUMN_NAME])
+    self.data[Characteristic.INTERVENTION_VISUALIZATION_COLUMN_NAME] = [
+      barify(value, denominator, resolution)
+      for value
+      in self.data[Characteristic.INTERVENTION_COLUMN_NAME]
+    ]
 
-def addBaselineCharacteristics(results_columns, characteristic_name, table, condition):
-  """
-  A convenience function that adds a row baseline characteristics
+    self.is_visualization_generated = True
 
-  Parameters:
-    results_columns ({
-      'characteristic': [],
-      'itt (control)': [], # itt = 0
-      'itt (intervention)': [] # itt = 1
-    }): a transposed object used to eventually create a DataFrame
-    characteristic_name (string): name of the characteristic to aggregate
-    table (DataFrame): the table to analyze
-    condition (??): example => (table['gender'] == Gender.FEMALE)
+  @classmethod
+  def init_data(cls):
+    data = dict(zip(
+      (
+        Characteristic.INDEX_COLUMN_NAME,
+        Characteristic.CONTROL_COLUMN_NAME,
+        Characteristic.CONTROL_VISUALIZATION_COLUMN_NAME,
+        Characteristic.INTERVENTION_COLUMN_NAME,
+        Characteristic.INTERVENTION_VISUALIZATION_COLUMN_NAME
+      ),
+      ([], [], [], [], [])
+    ))
 
-  Returns:
-    [, ]: the values in the control and intervention column
-  """
-  return addRow(
-    results_columns,
-    characteristic_name,
-    len(table[(table['itt'] == 0) & condition]),
-    len(table[(table['itt'] == 1) & condition])
-  )
+    return data
+
+  @classmethod
+  def join(cls, characteristics, separator='---'):
+    result = Characteristic.init_data()
+
+    for characteristic in characteristics:
+      result[Characteristic.INDEX_COLUMN_NAME].extend(characteristic.data[Characteristic.INDEX_COLUMN_NAME])
+      result[Characteristic.CONTROL_COLUMN_NAME].extend(characteristic.data[Characteristic.CONTROL_COLUMN_NAME])
+      result[Characteristic.INTERVENTION_COLUMN_NAME].extend(characteristic.data[Characteristic.INTERVENTION_COLUMN_NAME])
+
+      result[Characteristic.CONTROL_VISUALIZATION_COLUMN_NAME].extend(
+        characteristic.data[Characteristic.CONTROL_VISUALIZATION_COLUMN_NAME]
+        if characteristic.is_visualization_generated
+        else ['' for _ in characteristic.data[Characteristic.CONTROL_COLUMN_NAME]]
+      )
+      result[Characteristic.INTERVENTION_VISUALIZATION_COLUMN_NAME].extend(
+        characteristic.data[Characteristic.INTERVENTION_VISUALIZATION_COLUMN_NAME]
+        if characteristic.is_visualization_generated
+        else ['' for _ in characteristic.data[Characteristic.INTERVENTION_COLUMN_NAME]]
+      )
+
+      # Append breaks between characteristics
+      result[Characteristic.INDEX_COLUMN_NAME].append(separator)
+      result[Characteristic.CONTROL_COLUMN_NAME].append(separator)
+      result[Characteristic.INTERVENTION_COLUMN_NAME].append(separator)
+      result[Characteristic.CONTROL_VISUALIZATION_COLUMN_NAME].append(separator)
+      result[Characteristic.INTERVENTION_VISUALIZATION_COLUMN_NAME].append(separator)
+
+    return result
 # ---
 
-patientsData = PatientsData.load()
+patients_data = PatientsData.load()
 
 patients_columns = {
   'id': [],
@@ -91,7 +117,7 @@ patients_columns = {
 }
 
 for patient_id in [i for i in range(1,241) if i != 109]: # exclude patient 109
-  patient = patientsData.getPatient(patient_id)
+  patient = patients_data.getPatient(patient_id)
   patients_columns['id'].append(patient.id)
   patients_columns['patient_type'].append(patient.type)
   patients_columns['compliance'].append(patient.compliance)
@@ -115,111 +141,173 @@ for patient_id in [i for i in range(1,241) if i != 109]: # exclude patient 109
 
 patients = pd.DataFrame(data=patients_columns)
 
-# ITT (control vs intervention)
-results_columns = {
-  'characteristic': [],
-  'itt (control)': [], # itt = 0
-  'itt (intervention)': [] # itt = 1
-}
-
+gender_characteristic = Characteristic()
 for gender in Gender:
-  addBaselineCharacteristics(results_columns, Gender(gender).name.title(), patients, patients['gender'] == gender)
-addEmptyRow(results_columns)
+  gender_characteristic.add_aggregation(
+    Gender(gender).name.title(),
+    patients,
+    patients['gender'] == gender
+  )
 
+age_characteristic = Characteristic()
 age0 = 0
 for age in [18, 35, 50, 65]:
-  addBaselineCharacteristics(
-    results_columns,
+  age_characteristic.add_aggregation(
     '{0} - {1} years old'.format(age0, age),
     patients,
     ((patients['age'] >= age0) & (patients['age'] < age))
   )
   age0 = age
-addBaselineCharacteristics(results_columns, '>{0} years old'.format(age0), patients, (patients['age'] >= age0))
-addEmptyRow(results_columns)
+age_characteristic.add_aggregation(
+  '>{0} years old'.format(age0),
+  patients,
+  (patients['age'] >= age0)
+)
 
+race_characteristic = Characteristic()
 for race in Race:
-  addBaselineCharacteristics(results_columns, Race(race).name.title(), patients, patients['race'] == race)
-addEmptyRow(results_columns)
+  race_characteristic.add_aggregation(
+    Race(race).name.title(),
+    patients,
+    patients['race'] == race
+  )
 
+marital_status_characteristic = Characteristic()
 for marital_status in MaritalStatus:
-  addBaselineCharacteristics(results_columns, MaritalStatus(marital_status).name.title(), patients, patients['marital_status'] == marital_status)
-addEmptyRow(results_columns)
+  marital_status_characteristic.add_aggregation(
+    MaritalStatus(marital_status).name.title(),
+    patients,
+    patients['marital_status'] == marital_status
+  )
 
+education_level_characteristic = Characteristic()
 for education_level in EducationLevel:
-  addBaselineCharacteristics(results_columns, EducationLevel(education_level).name.title(), patients, patients['education_level'] == education_level)
-addEmptyRow(results_columns)
+  education_level_characteristic.add_aggregation(
+    EducationLevel(education_level).name.title(),
+    patients,
+    patients['education_level'] == education_level
+  )
 
+employment_status_characteristic = Characteristic()
 for employment_status in EmploymentStatus:
-  addBaselineCharacteristics(results_columns, EmploymentStatus(employment_status).name.title(), patients, patients['employment_status'] == employment_status)
-addEmptyRow(results_columns)
+  employment_status_characteristic.add_aggregation(
+    EmploymentStatus(employment_status).name.title(),
+    patients,
+    patients['employment_status'] == employment_status
+  )
 
+performance_characteristic = Characteristic()
 for performance in Performance:
-  addBaselineCharacteristics(results_columns, Performance(performance).name.title(), patients, patients['performance'] == performance)
-addEmptyRow(results_columns)
+  performance_characteristic.add_aggregation(
+    Performance(performance).name.title(),
+    patients,
+    patients['performance'] == performance
+  )
 
+cancer_type_layman_characteristic = Characteristic()
 for cancer_type_layman in CancerTypeLayman:
-  addBaselineCharacteristics(results_columns, CancerTypeLayman(cancer_type_layman).name.title(), patients, patients['cancer_type_layman'] == cancer_type_layman)
-addEmptyRow(results_columns)
+  cancer_type_layman_characteristic.add_aggregation(
+    CancerTypeLayman(cancer_type_layman).name.title(),
+    patients,
+    patients['cancer_type_layman'] == cancer_type_layman
+  )
 
-addBaselineCharacteristics(results_columns, TreatmentType.SURGERY.name.title(), patients, patients['has_treatment_surgery'] == True)
-addBaselineCharacteristics(results_columns, TreatmentType.RADIOTHERAPY.name.title(), patients, patients['has_treatment_radiotherapy'] == True)
-addBaselineCharacteristics(results_columns, TreatmentType.CHEMOTHERAPY.name.title(), patients, patients['has_treatment_chemotherapy'] == True)
-addBaselineCharacteristics(results_columns, TreatmentType.IMMUNOTHERAPY.name.title(), patients, patients['has_treatment_immunotherapy'] == True)
-addBaselineCharacteristics(results_columns, TreatmentType.OTHERS.name.title(), patients, patients['has_treatment_others'] == True)
-addEmptyRow(results_columns)
+treatment_type_characteristic = Characteristic()
+treatment_type_characteristic.add_aggregation(
+  TreatmentType.SURGERY.name.title(),
+  patients,
+  patients['has_treatment_surgery'] == True
+)
+treatment_type_characteristic.add_aggregation(
+  TreatmentType.RADIOTHERAPY.name.title(),
+  patients,
+  patients['has_treatment_radiotherapy'] == True
+)
+treatment_type_characteristic.add_aggregation(
+  TreatmentType.CHEMOTHERAPY.name.title(),
+  patients,
+  patients['has_treatment_chemotherapy'] == True
+)
+treatment_type_characteristic.add_aggregation(
+  TreatmentType.IMMUNOTHERAPY.name.title(),
+  patients,
+  patients['has_treatment_immunotherapy'] == True
+)
+treatment_type_characteristic.add_aggregation(
+  TreatmentType.OTHERS.name.title(),
+  patients,
+  patients['has_treatment_others'] == True
+)
 
-eventsData = EventsData.load()
-events = eventsData.events_df
+events_data = EventsData.load()
+events = events_data.events_df
 events['itt'] = events.apply(lambda row: findITTGroup(row['patient_type'], row['patient_compliance']), axis=1)
 events['at'] = events.apply(lambda row: findATGroup(row['patient_type'], row['patient_compliance']), axis=1)
 
-itt_control_emergency_visits, itt_intervention_emergency_visits = addBaselineCharacteristics(
-  results_columns,
+events_characteristic = Characteristic()
+_, control_edvisits, intervention_edvisits = events_characteristic.add_aggregation(
   'Emergency Department Visits',
   events,
   ((events['event_type'] == EventType.ED_NOADMIT) | (events['event_type'] == EventType.ADMIT_ED))
 )
 
-itt_control_unplanned_inpatient_admissions, itt_intervention_unplanned_inpatient_admissions = addBaselineCharacteristics(
-  results_columns,
+_, control_admissions, intervention_admissions = events_characteristic.add_aggregation(
   'Unplanned Inpatient Admissions',
   events,
   ((events['event_type'] == EventType.ADMIT_ED) | (events['event_type'] == EventType.ADMIT_CLINIC))
 )
 
-itt_control_followup_days = 0
-itt_intervention_followup_days = 0
+control_followup_days = 0
+intervention_followup_days = 0
 for patient_id in [i for i in range(1,241) if i != 109]:
-  start_date, end_date = eventsData.findEffectiveStartEndDates(patient_id)
+  start_date, end_date = events_data.findEffectiveStartEndDates(patient_id)
   followup_days = (pd.Timestamp(end_date) - pd.Timestamp(start_date)).days
   if (patients[(patients['id'] == patient_id)]['itt'].values[0] == 0):
-    itt_control_followup_days += followup_days
+    control_followup_days += followup_days
   else:
-    itt_intervention_followup_days += followup_days
+    intervention_followup_days += followup_days
 
-# addRow(results_columns, 'Follow-Up [person-days]', itt_control_followup_days, itt_intervention_followup_days)
-addRow(
-  results_columns,
-  'Follow-Up [person-years]',
-  '{:.2f}'.format(itt_control_followup_days / 365),
-  '{:.2f}'.format(itt_intervention_followup_days / 365)
+events_characteristic.add_row(
+  'Follow-Up [person-yrs]',
+  '{:.2f}'.format(control_followup_days / 365),
+  '{:.2f}'.format(intervention_followup_days / 365)
 )
-addRow(
-  results_columns,
-  'Incidence (Emergency Department Visits) [visits/person/year]',
-  '{:.2f}'.format(itt_control_emergency_visits/(itt_control_followup_days / 365)),
-  '{:.2f}'.format(itt_intervention_emergency_visits/(itt_intervention_followup_days / 365)),
+events_characteristic.add_row(
+  'Incidence (ED Visits) [visits/person/yr]',
+  '{:.2f}'.format(control_edvisits/(control_followup_days / 365)),
+  '{:.2f}'.format(intervention_edvisits/(intervention_followup_days / 365))
 )
-addRow(
-  results_columns,
-  'Incidence (Unplanned Inpatient Admissions) [visits/person/year]',
-  '{:.2f}'.format(itt_control_unplanned_inpatient_admissions/(itt_control_followup_days / 365)),
-  '{:.2f}'.format(itt_intervention_unplanned_inpatient_admissions/(itt_intervention_followup_days / 365)),
+events_characteristic.add_row(
+  'Incidence (Admissions) [visits/person/yr]',
+  '{:.2f}'.format(control_admissions/(control_followup_days / 365)),
+  '{:.2f}'.format(intervention_admissions/(intervention_followup_days / 365))
 )
 
-results = pd.DataFrame(data=results_columns)
-results.set_index('characteristic')
+gender_characteristic.generate_visualizations()
+age_characteristic.generate_visualizations()
+race_characteristic.generate_visualizations()
+marital_status_characteristic.generate_visualizations()
+education_level_characteristic.generate_visualizations()
+employment_status_characteristic.generate_visualizations()
+performance_characteristic.generate_visualizations()
+cancer_type_layman_characteristic.generate_visualizations()
+treatment_type_characteristic.generate_visualizations()
+
+characteristics = Characteristic.join([
+  gender_characteristic,
+  age_characteristic,
+  race_characteristic,
+  marital_status_characteristic,
+  education_level_characteristic,
+  employment_status_characteristic,
+  performance_characteristic,
+  cancer_type_layman_characteristic,
+  treatment_type_characteristic,
+  events_characteristic
+])
+
+results = pd.DataFrame(data=characteristics)
+results.set_index(Characteristic.INDEX_COLUMN_NAME)
 
 with open('results/aggregations.md', 'w') as f:
   print(results.to_markdown(index=False), file=f)

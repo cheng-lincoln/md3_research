@@ -1,8 +1,13 @@
 from datetime import datetime
 import numpy as np
 from enums import PatientType, PatientCompliance
+import math
 
 DATE_FORMAT = '%Y-%m-%d'
+
+LEFT_HALF_BAR = u'\u258c'
+RIGHT_HALF_BAR = u'\u2590'
+FULL_BAR = u'\u2588'
 
 def serializeTimestamp(timestamp):
   """
@@ -54,3 +59,32 @@ def findATGroup(patient_type, patient_compliance):
     (int): 0 = usual or sparkle-noncompliant, 1 = sparkle-compliant
   """
   return 1 if (patient_type == PatientType.SPARKLE and patient_compliance == PatientCompliance.SPARKLE_COMPLIANT) else 0
+
+def barify(numerator, denominator, resolution):
+  """
+  Creates an ascii bar to represent percentage
+
+  Parameters:
+    numerator (int):
+    denominator (int):
+    resolution (int): the number of fragments to represent 100%
+
+  Returns:
+    (str): an ascii bar
+  """
+  if type(numerator) is str:
+    try:
+      numerator = int(numerator)
+    except ValueError:
+      numerator = float(numerator)
+
+  bar = ''
+  n_fragments = math.floor(resolution * numerator / denominator)
+  while n_fragments > 0:
+    if n_fragments >= 2:
+      bar += FULL_BAR
+    elif n_fragments < 2:
+      bar += LEFT_HALF_BAR
+    n_fragments -= 2
+
+  return bar
