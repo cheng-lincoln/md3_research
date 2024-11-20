@@ -88,3 +88,22 @@ def barify(numerator, denominator, resolution):
     n_fragments -= 2
 
   return bar
+
+def numberify(value):
+  """
+  Converts a value to a number if possible.
+
+  Parameters:
+    value (any):
+
+  Returns:
+    (int) or (float): if convertable
+    (None): if not convertable
+  """
+  try:
+    return int(value)
+  except ValueError:
+    try:
+      return float(value)
+    except ValueError:
+      return None

@@ -1,5 +1,5 @@
 import pandas as pd
-from utils import find_itt_group, find_at_group, barify
+from utils import find_itt_group, find_at_group, barify, numberify
 from enums import *
 from build_patients import PatientsData
 from build_events import EventsData
@@ -27,7 +27,7 @@ class Characteristic:
     Adds a row to the characteristic.
 
     Parameters:
-      index_value (int or float):
+      index_value (str):
       control_value (int or float):
       intervention_value (int or float):
 
@@ -40,17 +40,23 @@ class Characteristic:
 
     return [index_value, control_value, intervention_value]
 
-  def add_aggregation(self, index_value, table, condition):
+  def add_aggregation(self, index_value, table, condition, intervention_only=False):
     """
     Adds a row to the characteristic, counting how many items in a given table
     matches the condition as described by that row
+
+    Parameters:
+      index_value (str):
+      table (DataFrame): A pandas dataframe where the condition will be applied to
+      condition (??): a pandas dataframe Select-like condition
+      intervention_only (bool): only aggregate across the intervention group
 
     Returns:
       [(int or float), (int or float), (int or float),]: values of the row added
     """
     return self.add_row(
       index_value,
-      control_value = len(table[(table['itt'] == 0) & condition]),
+      control_value = len(table[(table['itt'] == 0) & condition]) if not intervention_only else '',
       intervention_value = len(table[(table['itt'] == 1) & condition]),
     )
 
@@ -64,18 +70,18 @@ class Characteristic:
     Returns:
       (None)
     """
-    denominator = sum(self.data[Characteristic.CONTROL_COLUMN_NAME])
+    control_values = [numberify(value) for value in self.data[Characteristic.CONTROL_COLUMN_NAME]]
     self.data[Characteristic.CONTROL_VISUALIZATION_COLUMN_NAME] = [
-      barify(value, denominator, resolution)
+      barify(value, sum(control_values), resolution) if None not in control_values else ''
       for value
-      in self.data[Characteristic.CONTROL_COLUMN_NAME]
+      in control_values
     ]
 
-    denominator = sum(self.data[Characteristic.INTERVENTION_COLUMN_NAME])
+    intervention_values = [numberify(value) for value in self.data[Characteristic.INTERVENTION_COLUMN_NAME]]
     self.data[Characteristic.INTERVENTION_VISUALIZATION_COLUMN_NAME] = [
-      barify(value, denominator, resolution)
+      barify(value, sum(intervention_values), resolution) if None not in intervention_values else ''
       for value
-      in self.data[Characteristic.INTERVENTION_COLUMN_NAME]
+      in intervention_values
     ]
 
     self.is_visualization_generated = True
@@ -331,6 +337,15 @@ events_characteristic.add_row(
   '{:.2f}'.format(intervention_admissions/(intervention_followup_days / 365))
 )
 
+intervention_characteristic = Characteristic()
+for compliance in [PatientCompliance.SPARKLE_COMPLIANT, PatientCompliance.SPARKLE_NONCOMPLIANT]:
+  intervention_characteristic.add_aggregation(
+    PatientCompliance(compliance).name.title(),
+    patients,
+    patients['compliance'] == compliance,
+    intervention_only = True
+  )
+
 gender_characteristic.generate_visualizations()
 age_characteristic.generate_visualizations()
 race_characteristic.generate_visualizations()
@@ -340,6 +355,7 @@ employment_status_characteristic.generate_visualizations()
 performance_characteristic.generate_visualizations()
 cancer_type_layman_characteristic.generate_visualizations()
 treatment_type_characteristic.generate_visualizations()
+intervention_characteristic.generate_visualizations()
 
 characteristics = Characteristic.join([
     gender_characteristic,
@@ -351,7 +367,8 @@ characteristics = Characteristic.join([
     performance_characteristic,
     cancer_type_layman_characteristic,
     treatment_type_characteristic,
-    events_characteristic
+    events_characteristic,
+    intervention_characteristic
   ],
   separator='---'
 )
