@@ -5,6 +5,13 @@ from build_patients import PatientsData
 from build_events import EventsData
 
 class Characteristic:
+  """
+  A helper class that collates data and generate visualizations for a characteristic.
+
+  Attributes:
+    data ({ str: [] }): a dictionary where the keys are column names, and values are lists of row values for that column
+    is_visualization_generated (bool):
+  """
   INDEX_COLUMN_NAME = 'characteristic'
   CONTROL_COLUMN_NAME = 'control'
   INTERVENTION_COLUMN_NAME = 'intervention'
@@ -16,6 +23,17 @@ class Characteristic:
     self.is_visualization_generated = False
 
   def add_row(self, index_value, control_value, intervention_value):
+    """
+    Adds a row to the characteristic.
+
+    Parameters:
+      index_value (int or float):
+      control_value (int or float):
+      intervention_value (int or float):
+
+    Returns:
+      [index_value, control_value, intervention_value]:
+    """
     self.data[Characteristic.INDEX_COLUMN_NAME].append(index_value)
     self.data[Characteristic.CONTROL_COLUMN_NAME].append(control_value)
     self.data[Characteristic.INTERVENTION_COLUMN_NAME].append(intervention_value)
@@ -23,6 +41,13 @@ class Characteristic:
     return [index_value, control_value, intervention_value]
 
   def add_aggregation(self, index_value, table, condition):
+    """
+    Adds a row to the characteristic, counting how many items in a given table
+    matches the condition as described by that row
+
+    Returns:
+      [(int or float), (int or float), (int or float),]: values of the row added
+    """
     return self.add_row(
       index_value,
       control_value = len(table[(table['itt'] == 0) & condition]),
@@ -30,6 +55,15 @@ class Characteristic:
     )
 
   def generate_visualizations(self, resolution = 20):
+    """
+    Generates the visualization columns for the characteristic. Only run this after you finish populating the characteristic.
+
+    Parameters:
+      resolution (int): how many fragments a full bar should have
+
+    Returns:
+      (None)
+    """
     denominator = sum(self.data[Characteristic.CONTROL_COLUMN_NAME])
     self.data[Characteristic.CONTROL_VISUALIZATION_COLUMN_NAME] = [
       barify(value, denominator, resolution)
@@ -48,6 +82,9 @@ class Characteristic:
 
   @classmethod
   def init_data(cls):
+    """
+    Initializes an empty data object used by Characteristic.
+    """
     data = dict(zip(
       (
         Characteristic.INDEX_COLUMN_NAME,
@@ -62,7 +99,17 @@ class Characteristic:
     return data
 
   @classmethod
-  def join(cls, characteristics, separator='---'):
+  def join(cls, characteristics, separator=None):
+    """
+    Joins the data of multiple characteristics, with an option to add separator rows between each characteristic.
+
+    Parameters:
+      characteristics (Characteristic[]):
+      separator (string or None): if None, no separator rows are added
+
+    Returns:
+      ({ str: [] }): an object with each key being a column name, and values the list of row values for that column.
+    """
     result = Characteristic.init_data()
 
     for characteristic in characteristics:
@@ -82,15 +129,16 @@ class Characteristic:
       )
 
       # Append breaks between characteristics
-      result[Characteristic.INDEX_COLUMN_NAME].append(separator)
-      result[Characteristic.CONTROL_COLUMN_NAME].append(separator)
-      result[Characteristic.INTERVENTION_COLUMN_NAME].append(separator)
-      result[Characteristic.CONTROL_VISUALIZATION_COLUMN_NAME].append(separator)
-      result[Characteristic.INTERVENTION_VISUALIZATION_COLUMN_NAME].append(separator)
+      if separator is not None:
+        result[Characteristic.INDEX_COLUMN_NAME].append(separator)
+        result[Characteristic.CONTROL_COLUMN_NAME].append(separator)
+        result[Characteristic.INTERVENTION_COLUMN_NAME].append(separator)
+        result[Characteristic.CONTROL_VISUALIZATION_COLUMN_NAME].append(separator)
+        result[Characteristic.INTERVENTION_VISUALIZATION_COLUMN_NAME].append(separator)
 
     return result
-# ---
 
+# ---
 patients_data = PatientsData.load()
 
 patients_columns = {
@@ -294,17 +342,19 @@ cancer_type_layman_characteristic.generate_visualizations()
 treatment_type_characteristic.generate_visualizations()
 
 characteristics = Characteristic.join([
-  gender_characteristic,
-  age_characteristic,
-  race_characteristic,
-  marital_status_characteristic,
-  education_level_characteristic,
-  employment_status_characteristic,
-  performance_characteristic,
-  cancer_type_layman_characteristic,
-  treatment_type_characteristic,
-  events_characteristic
-])
+    gender_characteristic,
+    age_characteristic,
+    race_characteristic,
+    marital_status_characteristic,
+    education_level_characteristic,
+    employment_status_characteristic,
+    performance_characteristic,
+    cancer_type_layman_characteristic,
+    treatment_type_characteristic,
+    events_characteristic
+  ],
+  separator='---'
+)
 
 results = pd.DataFrame(data=characteristics)
 results.set_index(Characteristic.INDEX_COLUMN_NAME)
