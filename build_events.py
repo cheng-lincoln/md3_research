@@ -3,7 +3,7 @@ import numpy as np
 import json
 import pandas as pd
 from enums import EventType
-from utils import serializeTimestamp, DATE_FORMAT, get_censor_date
+from utils import serialize_timestamp, DATE_FORMAT, get_censor_date
 from build_patients import PatientsData
 
 class Event:
@@ -50,7 +50,7 @@ class Event:
     Returns:
       str: The event date in descriptive form.
     """
-    return serializeTimestamp(self.date)
+    return serialize_timestamp(self.date)
 
 def extractEnrollmentEvent(row):
   """

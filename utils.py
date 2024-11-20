@@ -9,7 +9,7 @@ LEFT_HALF_BAR = u'\u258c'
 RIGHT_HALF_BAR = u'\u2590'
 FULL_BAR = u'\u2588'
 
-def serializeTimestamp(timestamp):
+def serialize_timestamp(timestamp):
   """
   Converts a datetime to str in (e.g 2024-04-30) format
 
@@ -18,7 +18,7 @@ def serializeTimestamp(timestamp):
   """
   return timestamp.strftime(DATE_FORMAT)
 
-def deserializeToTimestamp(timestring):
+def deserialize_to_timestamp(timestring):
   """
   Converts a str to datetime in (e.g 2024-04-30) format
 
@@ -32,9 +32,9 @@ def get_censor_date():
   Returns:
     numpy.datetime64: The censor date used
   """
-  return np.datetime64(deserializeToTimestamp('2024-04-30'))
+  return np.datetime64(deserialize_to_timestamp('2024-04-30'))
 
-def findITTGroup(patient_type, patient_compliance):
+def find_itt_group(patient_type, patient_compliance):
   """
   Finds out which Intention-To-Treat group a patient should be in
 
@@ -47,7 +47,7 @@ def findITTGroup(patient_type, patient_compliance):
   """
   return 1 if patient_type == PatientType.SPARKLE else 0
 
-def findATGroup(patient_type, patient_compliance):
+def find_at_group(patient_type, patient_compliance):
   """
   Finds out which As-Treated group a patient should be in
 

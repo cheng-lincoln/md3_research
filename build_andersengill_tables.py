@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from utils import findATGroup, findITTGroup
+from utils import find_at_group, find_itt_group
 from enums import Censor, EventType
 from build_events import EventsData
 
@@ -31,8 +31,8 @@ class AndersenGillFormatter:
 
     patient_type = eventsData.getPatientType(patient_id)
     patient_compliance = eventsData.getPatientCompliance(patient_id)
-    self.itt = findITTGroup(patient_type, patient_compliance)
-    self.at = findATGroup(patient_type, patient_compliance)
+    self.itt = find_itt_group(patient_type, patient_compliance)
+    self.at = find_at_group(patient_type, patient_compliance)
 
     self.emergency_department_uses = eventsData.findEmergencyDepartmentUsesBetween(
       patient_id,

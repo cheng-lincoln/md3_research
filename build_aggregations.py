@@ -1,5 +1,5 @@
 import pandas as pd
-from utils import findITTGroup, findATGroup, barify
+from utils import find_itt_group, find_at_group, barify
 from enums import *
 from build_patients import PatientsData
 from build_events import EventsData
@@ -170,8 +170,8 @@ for patient_id in [i for i in range(1,241) if i != 109]: # exclude patient 109
   patients_columns['patient_type'].append(patient.type)
   patients_columns['compliance'].append(patient.compliance)
 
-  patients_columns['itt'].append(findITTGroup(patient.type, patient.compliance))
-  patients_columns['at'].append(findATGroup(patient.type, patient.compliance))
+  patients_columns['itt'].append(find_itt_group(patient.type, patient.compliance))
+  patients_columns['at'].append(find_at_group(patient.type, patient.compliance))
 
   patients_columns['gender'].append(patient.demographics.gender)
   patients_columns['age'].append(patient.demographics.age)
@@ -289,8 +289,8 @@ treatment_type_characteristic.add_aggregation(
 
 events_data = EventsData.load()
 events = events_data.events_df
-events['itt'] = events.apply(lambda row: findITTGroup(row['patient_type'], row['patient_compliance']), axis=1)
-events['at'] = events.apply(lambda row: findATGroup(row['patient_type'], row['patient_compliance']), axis=1)
+events['itt'] = events.apply(lambda row: find_itt_group(row['patient_type'], row['patient_compliance']), axis=1)
+events['at'] = events.apply(lambda row: find_at_group(row['patient_type'], row['patient_compliance']), axis=1)
 
 events_characteristic = Characteristic()
 _, control_edvisits, intervention_edvisits = events_characteristic.add_aggregation(
