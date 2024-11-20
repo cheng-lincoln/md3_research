@@ -111,6 +111,7 @@ We want to build the Andersen-Gill Table from all the
 Andersen-Gill Table has these columns:
 - id
 - itt: 0 (usual) or 1 (sparkle)
+- at: 0 = usual or sparkle-noncompliant, 1 = sparkle-compliant
 - time0
 - time
 - status: 0 (censored) or 1 (event occured)

@@ -259,12 +259,24 @@ for performance in Performance:
   )
 
 cancer_type_layman_characteristic = Characteristic()
-for cancer_type_layman in CancerTypeLayman:
+for cancer_type_layman in [
+  CancerTypeLayman.LUNG,
+  CancerTypeLayman.HEAD_NECK,
+  CancerTypeLayman.RENAL,
+  CancerTypeLayman.PROSTATE,
+  CancerTypeLayman.GI
+]:
   cancer_type_layman_characteristic.add_aggregation(
     CancerTypeLayman(cancer_type_layman).name.title(),
     patients,
     patients['cancer_type_layman'] == cancer_type_layman
   )
+cancer_type_layman_characteristic.add_aggregation(
+  'Others',
+  patients,
+  patients['cancer_type_layman'] > CancerTypeLayman.GI
+)
+
 
 treatment_type_characteristic = Characteristic()
 treatment_type_characteristic.add_aggregation(
