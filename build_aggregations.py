@@ -165,7 +165,7 @@ patients_columns = {
 }
 
 for patient_id in [i for i in range(1,241) if i != 109]: # exclude patient 109
-  patient = patients_data.getPatient(patient_id)
+  patient = patients_data.get_patient(patient_id)
   patients_columns['id'].append(patient.id)
   patients_columns['patient_type'].append(patient.type)
   patients_columns['compliance'].append(patient.compliance)

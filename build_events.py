@@ -191,10 +191,10 @@ class EventsData:
     self.patientsData = patientsData
 
   def getPatientType(self, patient_id):
-    return self.patientsData.getPatient(patient_id).type
+    return self.patientsData.get_patient(patient_id).type
 
   def getPatientCompliance(self, patient_id):
-    return self.patientsData.getPatient(patient_id).compliance
+    return self.patientsData.get_patient(patient_id).compliance
 
   def findDeathDate(self, patient_id):
     """
@@ -368,13 +368,13 @@ class EventsData:
     }
 
     for event in events:
-      patient = patientsData.getPatient(event.patient_id)
+      patient = patientsData.get_patient(event.patient_id)
 
       events_transposed['id'].append(patient.id)
       events_transposed['patient_type'].append(patient.type)
-      events_transposed['patient_type_description'].append(patient.describePatientType())
+      events_transposed['patient_type_description'].append(patient.describe_patient_type())
       events_transposed['patient_compliance'].append(patient.compliance)
-      events_transposed['patient_compliance_description'].append(patient.describePatientCompliance())
+      events_transposed['patient_compliance_description'].append(patient.describe_patient_compliance())
 
       events_transposed['event_type'].append(event.type)
       events_transposed['event_type_description'].append(event.describeEventType())

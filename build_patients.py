@@ -35,8 +35,8 @@ class Patient:
       'compliance': self.compliance,
       'demographics': self.demographics.toJSON(),
       '_description': {
-        'patient_type': self.describePatientType(),
-        'compliance': self.describePatientCompliance(),
+        'patient_type': self.describe_patient_type(),
+        'compliance': self.describe_patient_compliance(),
       }
     }
 
@@ -46,28 +46,28 @@ class Patient:
       indent=2
     )
 
-  def describePatientType(self):
+  def describe_patient_type(self):
     """
     Returns:
       str: The patient type (i.e SPARKLE or Usual) in descriptive form.
     """
     return PatientType(self.type).name
 
-  def describePatientCompliance(self):
+  def describe_patient_compliance(self):
     """
     Returns:
       str: The patient compliance in descriptive form.
     """
     return PatientCompliance(self.compliance).name
 
-  def setCompliance(self, compliance):
+  def set_compliance(self, compliance):
     """
     Parameters:
       compliance (PatientCompliance): Whether the patient is compliant to SPARKLE intervention (if SPARKLE)
     """
     self.compliance = compliance
 
-  def setDemographics(self, demographics):
+  def set_demographics(self, demographics):
     """
     Parameters:
       demographics (Demographics): Demographics of the patient
@@ -123,14 +123,14 @@ class Demographics:
       'cancer_type_layman': self.cancer_type_layman,
       'treatment_types': self.treatment_types,
       '_description': {
-        'gender': self.describeGender(),
-        'race': self.describeRace(),
-        'marital_status': self.describeMaritalStatus(),
-        'education_level': self.describeEducationLevel(),
-        'employment_status': self.describeEmploymentStatus(),
-        'performance': self.describePerformance(),
-        'cancer_type_layman': self.describeCancerTypeLayman(),
-        'treatment_types': self.describeTreatmentTypes()
+        'gender': self.describe_gender(),
+        'race': self.describe_race(),
+        'marital_status': self.describe_marital_status(),
+        'education_level': self.describe_education_level(),
+        'employment_status': self.describe_employment_status(),
+        'performance': self.describe_performance(),
+        'cancer_type_layman': self.describe_cancer_type_layman(),
+        'treatment_types': self.describe_treatment_types()
       }
     }
 
@@ -140,35 +140,35 @@ class Demographics:
       indent=2
     )
 
-  def describeGender(self):
+  def describe_gender(self):
     return Gender(self.gender).name
 
-  def describeRace(self):
+  def describe_race(self):
     return Race(self.race).name
 
-  def describeMaritalStatus(self):
+  def describe_marital_status(self):
     return MaritalStatus(self.marital_status).name
 
-  def describeEducationLevel(self):
+  def describe_education_level(self):
     return EducationLevel(self.education_level).name
 
-  def describeEmploymentStatus(self):
+  def describe_employment_status(self):
     return EmploymentStatus(self.employment_status).name
 
-  def describePerformance(self):
+  def describe_performance(self):
     return Performance(self.performance).name
 
-  def describeCancerTypeLayman(self):
+  def describe_cancer_type_layman(self):
     return CancerTypeLayman(self.cancer_type_layman).name
 
-  def describeTreatmentTypes(self):
+  def describe_treatment_types(self):
     return [
       TreatmentType(treatment_type).name
       for treatment_type
       in self.treatment_types
     ]
 
-def extractPatient(row):
+def extract_patient(row):
   """
   Extracts patient information from a row in patient_information excel sheet
 
@@ -191,7 +191,7 @@ def extractPatient(row):
     PatientType.SPARKLE if row['Combined_data_allocation'] == 'SPARKLE' else PatientType.USUAL
   )
 
-def extractCompliance(ipos, patient_id):
+def extract_compliance(ipos, patient_id):
   """
   Extracts compliance information of a patient from ipos.xlsx
 
@@ -209,7 +209,7 @@ def extractCompliance(ipos, patient_id):
 
   return sum(1 for ipos_completed_date in ipos_completed_dates if isinstance(ipos_completed_date, datetime))
 
-def extractDemographics(ipos, patient_id):
+def extract_demographics(ipos, patient_id):
   """
   Extracts demographics information of a patient from ipos.xlsx
 
@@ -275,7 +275,7 @@ class PatientsData:
     """
     self.patients = {} # {<patient_id>: Patient}
 
-  def addPatient(self, patient):
+  def add_patient(self, patient):
     """
     Adds a patient
 
@@ -287,7 +287,7 @@ class PatientsData:
 
     self.patients[patient.id] = patient
 
-  def getPatient(self, patient_id):
+  def get_patient(self, patient_id):
     """
     Retrieves a patient given the patient's ID
 
@@ -331,10 +331,10 @@ class PatientsData:
     with open(loc, 'r') as f:
       storage_obj = json.load(f)
 
-    patientsData = PatientsData()
+    patients_data = PatientsData()
 
     for patient_id, patient_info in storage_obj.items():
-      patientsData.addPatient(
+      patients_data.add_patient(
         Patient(
           int(patient_id),
           patient_info['patient_type'],
@@ -353,21 +353,21 @@ class PatientsData:
         )
       )
 
-    return patientsData
+    return patients_data
 
 # -------
-patientsData = PatientsData()
+patients_data = PatientsData()
 
 ipos = pd.read_excel('data/ipos.xlsx')
 
 patients_info = pd.read_excel('data/patient_information.xlsx')
 for index, row in patients_info.iterrows():
-  patient = extractPatient(row)
+  patient = extract_patient(row)
 
-  ipos_weeks_completed = extractCompliance(ipos, patient.id)
+  ipos_weeks_completed = extract_compliance(ipos, patient.id)
   if (patient.type == PatientType.SPARKLE):
     # see Enums.py for definition of compliance
-    patient.setCompliance(
+    patient.set_compliance(
       PatientCompliance.SPARKLE_COMPLIANT if ipos_weeks_completed >= 12
       else PatientCompliance.SPARKLE_NONCOMPLIANT
     )
@@ -375,11 +375,11 @@ for index, row in patients_info.iterrows():
     if (ipos_weeks_completed > 0):
       raise ValueError('Patient {0} is usual intervention but has >0 IPOS questionnaires completed'.format(patient.id))
 
-    patient.setCompliance(PatientCompliance.NOT_APPLICABLE)
+    patient.set_compliance(PatientCompliance.NOT_APPLICABLE)
 
-  demographics = extractDemographics(ipos, patient.id)
-  patient.setDemographics(demographics)
+  demographics = extract_demographics(ipos, patient.id)
+  patient.set_demographics(demographics)
 
-  patientsData.addPatient(patient)
+  patients_data.add_patient(patient)
 
-patientsData.save()
+patients_data.save()
