@@ -308,7 +308,7 @@ _, control_admissions, intervention_admissions = events_characteristic.add_aggre
 control_followup_days = 0
 intervention_followup_days = 0
 for patient_id in [i for i in range(1,241) if i != 109]:
-  start_date, end_date = events_data.findEffectiveStartEndDates(patient_id)
+  start_date, end_date = events_data.find_effective_start_end_dates(patient_id)
   followup_days = (pd.Timestamp(end_date) - pd.Timestamp(start_date)).days
   if (patients[(patients['id'] == patient_id)]['itt'].values[0] == 0):
     control_followup_days += followup_days

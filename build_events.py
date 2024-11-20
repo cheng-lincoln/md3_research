@@ -32,27 +32,27 @@ class Event:
       {
         'patient_id': self.patient_id,
         'event_type': self.type,
-        'event_type_description': self.describeEventType(),
-        'event_date_description': self.describeEventDate()
+        'event_type_description': self.describe_event_type(),
+        'event_date_description': self.describe_event_date()
       },
       indent=2
     )
 
-  def describeEventType(self):
+  def describe_event_type(self):
     """
     Returns:
       str: The event type (e.g ENROLLMENT, ED_ADMIT, ED_NOADMIT, DEATH) in descriptive form.
     """
     return EventType(self.type).name
 
-  def describeEventDate(self):
+  def describe_event_date(self):
     """
     Returns:
       str: The event date in descriptive form.
     """
     return serialize_timestamp(self.date)
 
-def extractEnrollmentEvent(row):
+def extract_enrollment_event(row):
   """
   Extracts enrollement event information from a row in enrollment_events excel sheet
 
@@ -76,7 +76,7 @@ def extractEnrollmentEvent(row):
     event_date
   )
 
-def extractEmergencyDepartmentEvent(row):
+def extract_emergency_department_event(row):
   """
   Extracts emergency department event information from a row in emergency_department_events excel sheet
 
@@ -102,7 +102,7 @@ def extractEmergencyDepartmentEvent(row):
 
   return Event(patient_id, event_type, event_date)
 
-def extractAdmitAndDischargeEvents(row):
+def extract_admit_and_discharge_events(row):
   """
   Extracts an admission event and its corresponding discharge event from a row in inpatient_events excel sheet
 
@@ -146,7 +146,7 @@ def extractAdmitAndDischargeEvents(row):
     Event(patient_id, discharge_type, discharge_date)
   ]
 
-def checkForDeathEvent(row):
+def check_for_death_event(row):
   """
   Extracts death event information (if any) from a row in death_events excel sheet
 
@@ -178,25 +178,25 @@ class EventsData:
 
   Attributes:
     events_df (DataFrame): a sorted pandas DataFrame of all the events
-    patientsData (PatientsData): patient information
+    patients_data (PatientsData): patient information
   """
 
-  def __init__(self, events_df, patientsData):
+  def __init__(self, events_df, patients_data):
     """
     Parameters:
       events_df (DataFrame): a pandas DataFrame of all events
-      patientsData (PatientsData): patient information
+      patients_data (PatientsData): patient information
     """
     self.events_df = events_df.sort_values(by=['id', 'event_date', 'event_type'])
-    self.patientsData = patientsData
+    self.patients_data = patients_data
 
-  def getPatientType(self, patient_id):
-    return self.patientsData.get_patient(patient_id).type
+  def get_patient_type(self, patient_id):
+    return self.patients_data.get_patient(patient_id).type
 
-  def getPatientCompliance(self, patient_id):
-    return self.patientsData.get_patient(patient_id).compliance
+  def get_patient_compliance(self, patient_id):
+    return self.patients_data.get_patient(patient_id).compliance
 
-  def findDeathDate(self, patient_id):
+  def find_death_date(self, patient_id):
     """
     Retrieves the death date of a given patient, if any
 
@@ -216,7 +216,7 @@ class EventsData:
 
     return event['event_date'].values[0] if not event.empty else None
 
-  def findEnrollmentDate(self, patient_id):
+  def find_enrollment_date(self, patient_id):
     """
     Retrieves the enrollment date of a given patient
 
@@ -236,7 +236,7 @@ class EventsData:
 
     return event['event_date'].values[0]
 
-  def findEffectiveStartEndDates(self, patient_id):
+  def find_effective_start_end_dates(self, patient_id):
     """
     Returns the effective start and end date of a patient
 
@@ -246,18 +246,18 @@ class EventsData:
     Returns:
       [start_date (numpy.datetime64), end_date (numpy.datetime64)]
     """
-    enrollment_date = self.findEnrollmentDate(patient_id)
+    enrollment_date = self.find_enrollment_date(patient_id)
 
     censor_date = get_censor_date()
     if (censor_date < enrollment_date):
       raise ValueError('patient {0} is enrolled after the censor date'.format(patient_id))
 
-    death_date = self.findDeathDate(patient_id)
+    death_date = self.find_death_date(patient_id)
     end_date = censor_date if (death_date is None) or (death_date > censor_date) else death_date
 
     return [enrollment_date, end_date]
 
-  def findEventsBetween(self, patient_id, date_from, date_to):
+  def find_events_between(self, patient_id, date_from, date_to):
     """
     Retrieves all events between 2 dates
 
@@ -275,7 +275,7 @@ class EventsData:
       (self.events_df['event_date'] < date_to)
     ]
 
-  def findEmergencyDepartmentUsesBetween(self, patient_id, date_from, date_to):
+  def find_emergency_department_uses_between(self, patient_id, date_from, date_to):
     """
     Retrieves all emergency department uses between 2 dates
 
@@ -287,7 +287,7 @@ class EventsData:
     Returns:
       DataFrame.loc: all emergency department uses AFTER enrollment
     """
-    all_events_after_enrollment_before_end = self.findEventsBetween(patient_id, date_from, date_to)
+    all_events_after_enrollment_before_end = self.find_events_between(patient_id, date_from, date_to)
 
     return all_events_after_enrollment_before_end.loc[
       (all_events_after_enrollment_before_end['event_type'] == EventType.ADMIT_ED) |
@@ -295,7 +295,7 @@ class EventsData:
       (all_events_after_enrollment_before_end['event_type'] == EventType.ED_NOADMIT)
     ]
 
-  def findUnplannedInpatientAdmissionsBetween(self, patient_id, date_from, date_to):
+  def find_unplanned_inpatient_admissions_between(self, patient_id, date_from, date_to):
     """
     Retrieves all unplanned inpatient admissions between 2 dates
 
@@ -307,7 +307,7 @@ class EventsData:
     Returns:
       DataFrame.loc: all unplanned inpatient admissions AFTER enrollment
     """
-    all_events_after_enrollment_before_end = self.findEventsBetween(patient_id, date_from, date_to)
+    all_events_after_enrollment_before_end = self.find_events_between(patient_id, date_from, date_to)
 
     return all_events_after_enrollment_before_end.loc[
       (all_events_after_enrollment_before_end['event_type'] == EventType.ADMIT_ED) |
@@ -342,7 +342,7 @@ class EventsData:
     return EventsData(events_df, PatientsData.load())
 
   @classmethod
-  def fromEvents(cls, events):
+  def from_events(cls, events):
     """
     Creates EventsData from Event[]
 
@@ -352,7 +352,7 @@ class EventsData:
     Returns:
       EventsData: an EventsData object
     """
-    patientsData = PatientsData.load()
+    patients_data = PatientsData.load()
 
     events_transposed = {
     'id': [], # int[]
@@ -368,7 +368,7 @@ class EventsData:
     }
 
     for event in events:
-      patient = patientsData.get_patient(event.patient_id)
+      patient = patients_data.get_patient(event.patient_id)
 
       events_transposed['id'].append(patient.id)
       events_transposed['patient_type'].append(patient.type)
@@ -377,33 +377,33 @@ class EventsData:
       events_transposed['patient_compliance_description'].append(patient.describe_patient_compliance())
 
       events_transposed['event_type'].append(event.type)
-      events_transposed['event_type_description'].append(event.describeEventType())
+      events_transposed['event_type_description'].append(event.describe_event_type())
 
       events_transposed['event_date'].append(np.datetime64(event.date))
 
     events_df = pd.DataFrame(data=events_transposed)
 
-    return EventsData(events_df, patientsData)
+    return EventsData(events_df, patients_data)
 
 # -------
 events = [] # Events[]
 
 enrollment_events = pd.read_excel('data/enrollment_events.xlsx')
 for index, row in enrollment_events.iterrows():
-  enrollment_event = extractEnrollmentEvent(row)
+  enrollment_event = extract_enrollment_event(row)
   events.append(enrollment_event)
 
 # only add ED events with no admission
 ed_events = pd.read_excel('data/emergency_department_events.xlsx')
 for index, row in ed_events.iterrows():
-  ed_event = extractEmergencyDepartmentEvent(row)
+  ed_event = extract_emergency_department_event(row)
   if ed_event.type == EventType.ED_NOADMIT:
     events.append(ed_event)
 
 # only add non-elective admissions
 inpatient_events = pd.read_excel('data/inpatient_events.xlsx')
 for index, row in inpatient_events.iterrows():
-  admit_event, discharge_event = extractAdmitAndDischargeEvents(row)
+  admit_event, discharge_event = extract_admit_and_discharge_events(row)
   if (admit_event is not None):
     if admit_event.type in [EventType.ADMIT_ED, EventType.ADMIT_CLINIC]:
       events.append(admit_event)
@@ -411,9 +411,9 @@ for index, row in inpatient_events.iterrows():
 
 death_events = pd.read_excel('data/death_events.xlsx')
 for index, row in death_events.iterrows():
-  death_event = checkForDeathEvent(row)
+  death_event = check_for_death_event(row)
   if not death_event is None:
     events.append(death_event)
 
-eventsData = EventsData.fromEvents(events)
-eventsData.save()
+events_data = EventsData.from_events(events)
+events_data.save()

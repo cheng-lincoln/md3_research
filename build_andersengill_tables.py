@@ -19,28 +19,28 @@ class AndersenGillFormatter:
     unplanned_inpatient_admissions (DataFrame.loc): all post-enrollment unplanned inpatient admission events of the patient
   """
 
-  def __init__(self, patient_id, eventsData):
+  def __init__(self, patient_id, events_data):
     """
     Parameters:
       patient_id (int): ID of the patient
-      eventsData (EventsDAta): an EventsData object
+      events_data (EventsData): an EventsData object
     """
-    start_date, end_date = eventsData.findEffectiveStartEndDates(patient_id)
+    start_date, end_date = events_data.find_effective_start_end_dates(patient_id)
     self.start_date = start_date
     self.end_date = end_date
 
-    patient_type = eventsData.getPatientType(patient_id)
-    patient_compliance = eventsData.getPatientCompliance(patient_id)
+    patient_type = events_data.get_patient_type(patient_id)
+    patient_compliance = events_data.get_patient_compliance(patient_id)
     self.itt = find_itt_group(patient_type, patient_compliance)
     self.at = find_at_group(patient_type, patient_compliance)
 
-    self.emergency_department_uses = eventsData.findEmergencyDepartmentUsesBetween(
+    self.emergency_department_uses = events_data.find_emergency_department_uses_between(
       patient_id,
       self.start_date,
       self.end_date
     )
 
-    self.unplanned_inpatient_admissions = eventsData.findUnplannedInpatientAdmissionsBetween(
+    self.unplanned_inpatient_admissions = events_data.find_unplanned_inpatient_admissions_between(
       patient_id,
       self.start_date,
       self.end_date
@@ -48,10 +48,10 @@ class AndersenGillFormatter:
 
     self.patient_id = patient_id
 
-  def formatEmergencyDepartmentUses(self):
+  def format_emergency_department_uses(self):
     return self._convertEvents(self.emergency_department_uses)
 
-  def formatUnplannedInpatientAdmissions(self):
+  def format_unplanned_inpatient_admissions(self):
     return self._convertEvents(self.unplanned_inpatient_admissions)
 
   def _convertEvents(self, events):
@@ -116,17 +116,17 @@ Andersen-Gill Table has these columns:
 - status: 0 (censored) or 1 (event occured)
 '''
 
-eventsData = EventsData.load()
+events_data = EventsData.load()
 
 emergency_department_uses_table = []
 unplanned_inpatient_admissions_table = []
 
 for patient_id in [i for i in range(1,241) if i != 109]: # exclude patient 109
-  andersenGillFormatter = AndersenGillFormatter(patient_id, eventsData)
+  andersengill_formatter = AndersenGillFormatter(patient_id, events_data)
 
-  emergency_department_uses_table += andersenGillFormatter.formatEmergencyDepartmentUses()
+  emergency_department_uses_table += andersengill_formatter.format_emergency_department_uses()
 
-  unplanned_inpatient_admissions_table += andersenGillFormatter.formatUnplannedInpatientAdmissions()
+  unplanned_inpatient_admissions_table += andersengill_formatter.format_unplanned_inpatient_admissions()
 
 emergency_department_uses_table_df = pd.DataFrame(
   np.array(emergency_department_uses_table),
