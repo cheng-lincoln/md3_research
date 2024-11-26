@@ -107,3 +107,17 @@ def numberify(value):
       return float(value)
     except ValueError:
       return None
+
+def removeCommonZeroes(list1, list2):
+  """
+  Removes zeroes that are common across two lists. For example:
+  [1,0,0,4,5] and [5,4,0,0,1] -> [1,0,4,5] and [5,4,0,1]
+
+  Paramters:
+    list1 ([]):
+    list2 ([]):
+
+  Returns:
+    [], []
+  """
+  return zip(*filter(any, zip(list1, list2)))

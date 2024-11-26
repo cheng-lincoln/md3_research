@@ -1,5 +1,8 @@
 import pandas as pd
-from utils import find_itt_group, find_at_group, barify, numberify
+from scipy.stats import chi2_contingency
+import numpy as np
+import math
+from utils import find_itt_group, find_at_group, barify, numberify, removeCommonZeroes
 from enums import *
 from build_patients import PatientsData
 from build_events import EventsData
@@ -17,10 +20,12 @@ class Characteristic:
   INTERVENTION_COLUMN_NAME = 'intervention'
   CONTROL_VISUALIZATION_COLUMN_NAME = ' '
   INTERVENTION_VISUALIZATION_COLUMN_NAME = '  '
+  P_VALUE_COLUMN_NAME = 'p-value'
 
   def __init__(self):
     self.data = Characteristic.init_data()
     self.is_visualization_generated = False
+    self.is_p_value_generated = False
 
   def add_row(self, index_value, control_value, intervention_value):
     """
@@ -86,6 +91,26 @@ class Characteristic:
 
     self.is_visualization_generated = True
 
+  def generate_p_value(self):
+    """
+    Generates the p-value columns for the characteristic. Only run this after you finish populating the characteristic.
+
+    Returns:
+      (None)
+    """
+    control_values = [numberify(value) for value in self.data[Characteristic.CONTROL_COLUMN_NAME]]
+    intervention_values = [numberify(value) for value in self.data[Characteristic.INTERVENTION_COLUMN_NAME]]
+    self.data[Characteristic.P_VALUE_COLUMN_NAME] = ['' for _ in control_values]
+
+    control_values, intervention_values = removeCommonZeroes(control_values, intervention_values)
+
+    # index = math.floor(len(control_values) / 2)
+    # chi2_contingency to handle different sample size across control vs intervention group
+    p_value = chi2_contingency(np.array([control_values, intervention_values])).pvalue
+    self.data[Characteristic.P_VALUE_COLUMN_NAME][0] = f'{p_value:.3}' # round to 3 s.f
+
+    self.is_p_value_generated = True
+
   @classmethod
   def init_data(cls):
     """
@@ -97,9 +122,10 @@ class Characteristic:
         Characteristic.CONTROL_COLUMN_NAME,
         Characteristic.CONTROL_VISUALIZATION_COLUMN_NAME,
         Characteristic.INTERVENTION_COLUMN_NAME,
-        Characteristic.INTERVENTION_VISUALIZATION_COLUMN_NAME
+        Characteristic.INTERVENTION_VISUALIZATION_COLUMN_NAME,
+        Characteristic.P_VALUE_COLUMN_NAME
       ),
-      ([], [], [], [], [])
+      ([], [], [], [], [], [])
     ))
 
     return data
@@ -133,6 +159,11 @@ class Characteristic:
         if characteristic.is_visualization_generated
         else ['' for _ in characteristic.data[Characteristic.INTERVENTION_COLUMN_NAME]]
       )
+      result[Characteristic.P_VALUE_COLUMN_NAME].extend(
+        characteristic.data[Characteristic.P_VALUE_COLUMN_NAME]
+        if characteristic.is_p_value_generated
+        else ['' for _ in characteristic.data[Characteristic.CONTROL_COLUMN_NAME]]
+      )
 
       # Append breaks between characteristics
       if separator is not None:
@@ -141,6 +172,7 @@ class Characteristic:
         result[Characteristic.INTERVENTION_COLUMN_NAME].append(separator)
         result[Characteristic.CONTROL_VISUALIZATION_COLUMN_NAME].append(separator)
         result[Characteristic.INTERVENTION_VISUALIZATION_COLUMN_NAME].append(separator)
+        result[Characteristic.P_VALUE_COLUMN_NAME].append(separator)
 
     return result
 
@@ -359,14 +391,30 @@ for compliance in [PatientCompliance.SPARKLE_COMPLIANT, PatientCompliance.SPARKL
   )
 
 gender_characteristic.generate_visualizations()
+gender_characteristic.generate_p_value()
+
 age_characteristic.generate_visualizations()
+
 race_characteristic.generate_visualizations()
+race_characteristic.generate_p_value()
+
 marital_status_characteristic.generate_visualizations()
+marital_status_characteristic.generate_p_value()
+
 education_level_characteristic.generate_visualizations()
+education_level_characteristic.generate_p_value()
+
 employment_status_characteristic.generate_visualizations()
+employment_status_characteristic.generate_p_value()
+
 performance_characteristic.generate_visualizations()
+performance_characteristic.generate_p_value()
+
 cancer_type_layman_characteristic.generate_visualizations()
+cancer_type_layman_characteristic.generate_p_value()
+
 treatment_type_characteristic.generate_visualizations()
+
 intervention_characteristic.generate_visualizations()
 
 characteristics = Characteristic.join([
@@ -382,7 +430,7 @@ characteristics = Characteristic.join([
     events_characteristic,
     intervention_characteristic
   ],
-  separator='---'
+  separator='-----'
 )
 
 results = pd.DataFrame(data=characteristics)
