@@ -254,7 +254,7 @@ intervention_ages = patients[(patients['itt'] == 1)]['age'].values
 print('Control ages: {0} +- {1}'.format(f'{np.mean(control_ages):.3}', f'{np.std(control_ages):.3}'))
 print('Intervn ages: {0} +- {1}'.format(f'{np.mean(intervention_ages):.3}', f'{np.std(intervention_ages):.3}'))
 _, p_age = ttest_ind(control_ages, intervention_ages)
-print('p-value: {0}'.format(p_age))
+print('p-value: {0}'.format(f'{p_age:.3}'))
 
 race_characteristic = Characteristic()
 for race in Race:
