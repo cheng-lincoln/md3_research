@@ -165,5 +165,8 @@ data/
 processed_data/
 results/
 
+# Mac
+.DS_Store
+
 # To test random python code
 test.py
