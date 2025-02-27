@@ -1,7 +1,6 @@
 import pandas as pd
-from scipy.stats import chi2_contingency
+from scipy.stats import chi2_contingency, ttest_ind
 import numpy as np
-import math
 from utils import find_itt_group, find_at_group, barify, numberify, removeCommonZeroes
 from enums import *
 from build_patients import PatientsData
@@ -104,7 +103,6 @@ class Characteristic:
 
     control_values, intervention_values = removeCommonZeroes(control_values, intervention_values)
 
-    # index = math.floor(len(control_values) / 2)
     # chi2_contingency to handle different sample size across control vs intervention group
     p_value = chi2_contingency(np.array([control_values, intervention_values])).pvalue
     self.data[Characteristic.P_VALUE_COLUMN_NAME][0] = f'{p_value:.3}' # round to 3 s.f
@@ -249,6 +247,14 @@ age_characteristic.add_aggregation(
   patients,
   (patients['age'] >= age0)
 )
+
+# Calculating p-value for age should be continuous
+control_ages = patients[(patients['itt'] == 0)]['age'].values
+intervention_ages = patients[(patients['itt'] == 1)]['age'].values
+print('Control ages: {0} +- {1}'.format(f'{np.mean(control_ages):.3}', f'{np.std(control_ages):.3}'))
+print('Intervn ages: {0} +- {1}'.format(f'{np.mean(intervention_ages):.3}', f'{np.std(intervention_ages):.3}'))
+_, p_age = ttest_ind(control_ages, intervention_ages)
+print('p-value: {0}'.format(p_age))
 
 race_characteristic = Characteristic()
 for race in Race:
